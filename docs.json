@@ -16,13 +16,13 @@
           {
             "group": "Getting started",
             "pages": [
-              "readme"
+              "index"
             ]
           },
           {
             "group": "Customization",
             "pages": [
-              "readme"
+              "demo"
             ]
           }
         ]
@@ -32,7 +32,7 @@
         "icon": "history",
         "description": "Updates and changes",
         "pages": [
-          "readme"
+          "demo"
         ]
       }
     ]
