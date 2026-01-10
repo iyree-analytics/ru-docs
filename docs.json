@@ -10,8 +10,8 @@
     "primary": "#006C84"
   },
   "logo": {
-    "light": "/assets/img/logo_light_icon.svg",
-    "dark": "/assets/img/logo_light_icon.svg"
+    "light": "/assets/img/logo_light.svg",
+    "dark": "/assets/img/logo_light.svg"
   },
   "favicon": {
     "light": "/assets/img/logo_light_icon.svg",
