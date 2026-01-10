@@ -3,6 +3,9 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "willow",
   "name": "Your Docs",
+  "appearance": {
+    "default": "light"
+  },
   "colors": {
     "primary": "#ff0000"
   },
