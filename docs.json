@@ -2,12 +2,12 @@
   
   "$schema": "https://mintlify.com/docs.json",
   "theme": "willow",
-  "name": "Your Docs",
+  "name": "IYREE – Документация",
   "appearance": {
     "default": "light"
   },
   "colors": {
-    "primary": "#ff0000"
+    "primary": "#006C84"
   },
   "logo": {
     "light": "/assets/img/logo_light_icon.svg",
