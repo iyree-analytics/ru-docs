@@ -121,7 +121,7 @@ description: "Графики для отображения ключевых по
 
             ```yaml
             type: source_dashboard_filter
-            source_filter_id: "date_filter"
+            source_filter_id: "c3d4e5f6-7890-12cd-ef01-34567890abcd"
             ```
 
             **data_point_dimension** — значение измерения из точки клика:
@@ -151,15 +151,15 @@ description: "Графики для отображения ключевых по
   </Expandable>
   ```yaml
   data_point_actions:
-    - id: "action-1"
+    - id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
       key: "dashboard:drill_through"
       title: "Детализация продаж"
-      target_page_id: "sales-details"
+      target_page_id: "a1b2c3d4-5678-90ab-cdef-1234567890ab"
       filter_mappings:
-        - target_filter_id: "period"
+        - target_filter_id: "b2c3d4e5-6789-01bc-def0-234567890abc"
           sources:
             - type: source_dashboard_filter
-              source_filter_id: "main_date_filter"
+              source_filter_id: "c3d4e5f6-7890-12cd-ef01-34567890abcd"
   ```
 </ResponseField>
 
@@ -246,18 +246,18 @@ type: tile
 main_measure: sales.total_revenue
 data_point_actions_placement: tile
 data_point_actions:
-  - id: "drill-1"
+  - id: "d4e5f6a7-8901-23de-f012-456789abcdef"
     key: "dashboard:drill_through"
     title: "Детализация продаж"
     icon:
       library: lucide
       name: arrow-right
-    target_page_id: "sales-details"
+    target_page_id: "e5f6a7b8-9012-34ef-0123-56789abcdef0"
     filter_mappings:
-      - target_filter_id: "period"
+      - target_filter_id: "f6a7b8c9-0123-45f0-1234-6789abcdef01"
         sources:
           - type: source_dashboard_filter
-            source_filter_id: "date_filter"
+            source_filter_id: "a7b8c9d0-1234-56a1-2345-789abcdef012"
 ```
 
 </CodeGroup>

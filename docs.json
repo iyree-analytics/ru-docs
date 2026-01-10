@@ -17,6 +17,17 @@
     "light": "/assets/img/logo_light_icon.svg",
     "dark": "/assets/img/logo_light_icon.svg"
   },
+  "navbar": {
+    "links": [
+      { "label": "Status", "href": "https://status.example.com" },
+      { "label": "Pricing", "href": "https://example.com/pricing" }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "https://example.com/start"
+    }
+  },
   "navigation": {
     "dropdowns": [
       {
