@@ -1,7 +1,7 @@
 {
   
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "willow",
+  "theme": "almond",
   "name": "IYREE – Документация",
   "appearance": {
     "default": "light"
