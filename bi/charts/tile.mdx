@@ -1,0 +1,349 @@
+---
+title: "Плитка (Tile)"
+description: "Графики для отображения ключевых показателей (KPI)"
+---
+
+# Плитка (Tile)
+
+Графики типа Tile предназначены для отображения ключевых показателей (KPI) — одиночных числовых значений с опциональными дополнениями.
+
+## Типы плиток
+
+| Тип | Описание |
+|-----|----------|
+| `tile` | Одиночный показатель |
+| `multi_tile` | Несколько показателей |
+
+---
+
+## Tile — Одиночный показатель
+
+Отображает один ключевой показатель с возможностью сравнения периодов и линией тренда.
+
+### Поля
+
+<ResponseField name="type" type='"tile"' required>
+  Тип графика
+</ResponseField>
+
+<ResponseField name="main_measure" type="string" required>
+  Имя меры из куба данных
+  
+  ```yaml
+  main_measure: sales.total_revenue
+  ```
+</ResponseField>
+
+<ResponseField name="compare_period_enabled" type="boolean" default="false">
+  Включить сравнение с предыдущим периодом. При включении отображает разницу (абсолютную и процентную) между текущим и предыдущим периодом.
+</ResponseField>
+
+<ResponseField name="compare_formatting_direction" type="enum" default="more_better">
+  Определяет цветовое форматирование изменения значения при сравнении периодов.
+  
+  <Expandable title="Значения">
+    | Значение | Описание | Рост | Падение |
+    |----------|----------|------|---------|
+    | `more_better` | Больше — лучше | 🟢 Зелёный | 🔴 Красный |
+    | `less_better` | Меньше — лучше | 🔴 Красный | 🟢 Зелёный |
+    | `none` | Без цветовой индикации | — | — |
+  </Expandable>
+  
+  ```yaml
+  compare_formatting_direction: more_better
+  ```
+</ResponseField>
+
+<ResponseField name="data_point_actions_placement" type="enum">
+  Определяет, где появляется меню действий при клике.
+  
+  <Expandable title="Значения">
+    | Значение | Описание |
+    |----------|----------|
+    | `data_point` | Меню появляется при клике на значение |
+    | `tile` | Меню появляется при клике на всю плитку |
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="data_point_actions" type="DataPointActionDefinition[]">
+  Список действий, доступных при клике на плитку.
+  
+  <Expandable title="Структура DataPointActionDefinition">
+    <ResponseField name="id" type="string" required>
+      Уникальный идентификатор действия (UUID)
+    </ResponseField>
+    
+    <ResponseField name="key" type="string" required>
+      Ключ действия в формате `namespace:action`
+      
+      | Ключ | Описание |
+      |------|----------|
+      | `common:copy_value` | Копировать значение |
+      | `common:view_raw_data` | Просмотр исходных данных |
+      | `link:open` | Открыть ссылку |
+      | `dashboard:drill_through` | Переход на страницу дашборда |
+      | `dashboard:another_dashboard_drill_through` | Переход на другой дашборд |
+    </ResponseField>
+    
+    <ResponseField name="title" type="string" required>
+      Текст, отображаемый в меню
+    </ResponseField>
+    
+    <ResponseField name="icon" type="IconReference">
+      Иконка действия
+      
+      <Expandable title="Структура IconReference">
+        <ResponseField name="library" type="string" required>
+          Библиотека иконок. Поддерживается: `lucide`
+        </ResponseField>
+        <ResponseField name="name" type="string" required>
+          Имя иконки (например: `arrow-up`, `trending-down`, `copy`)
+        </ResponseField>
+        <ResponseField name="color" type="RGBColor">
+          Цвет иконки `[R, G, B]` (0-255)
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="target_page_id" type="string">
+      ID целевой страницы (для `dashboard:drill_through`)
+    </ResponseField>
+    
+    <ResponseField name="target_dashboard_id" type="string">
+      ID целевого дашборда (для `dashboard:another_dashboard_drill_through`)
+    </ResponseField>
+    
+    <ResponseField name="filter_mappings" type="DrillThroughFilterMapping[]">
+      Маппинг фильтров для drill-through
+      
+      <Expandable title="Структура DrillThroughFilterMapping">
+        <ResponseField name="target_filter_id" type="string" required>
+          ID фильтра на целевой странице
+        </ResponseField>
+        <ResponseField name="sources" type="FilterSource[]" required>
+          Источники данных для фильтра
+          
+          <Expandable title="Типы источников">
+            **source_dashboard_filter** — значение фильтра текущего дашборда:
+            ```yaml
+            type: source_dashboard_filter
+            source_filter_id: "date_filter"
+            ```
+            
+            **data_point_dimension** — значение измерения из точки клика:
+            ```yaml
+            type: data_point_dimension
+            member_name: products.category
+            ```
+            
+            **data_point_time_dimension** — временное измерение:
+            ```yaml
+            type: data_point_time_dimension
+            member_name: sales.created_at
+            granularity: month
+            ```
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      URL для открытия (для `link:open`). Поддерживает подстановку `{cube.member}`.
+    </ResponseField>
+    
+    <ResponseField name="open_in" type="enum">
+      Где открывать ссылку: `same_tab` | `new_tab`
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  data_point_actions:
+    - id: "action-1"
+      key: "dashboard:drill_through"
+      title: "Детализация продаж"
+      target_page_id: "sales-details"
+      filter_mappings:
+        - target_filter_id: "period"
+          sources:
+            - type: source_dashboard_filter
+              source_filter_id: "main_date_filter"
+  ```
+</ResponseField>
+
+<ResponseField name="trendline" type="TileTrendlineOptions">
+  Настройки линии тренда (спарклайн) под основным значением.
+  
+  <Expandable title="Структура TileTrendlineOptions">
+    <ResponseField name="color" type="string">
+      HEX-цвет линии тренда
+      
+      ```yaml
+      color: "#3B82F6"
+      ```
+    </ResponseField>
+    
+    <ResponseField name="time_dimension" type="TimeDimension" required>
+      Временное измерение для построения тренда
+      
+      <Expandable title="Структура TimeDimension">
+        <ResponseField name="dimension" type="string" required>
+          Имя временного измерения из куба
+        </ResponseField>
+        <ResponseField name="granularity" type="enum" required>
+          Гранулярность временного ряда
+          
+          | Значение | Описание |
+          |----------|----------|
+          | `second` | Секунды |
+          | `minute` | Минуты |
+          | `hour` | Часы |
+          | `day` | Дни |
+          | `week` | Недели |
+          | `month` | Месяцы |
+          | `quarter` | Кварталы |
+          | `year` | Годы |
+        </ResponseField>
+      </Expandable>
+      
+      ```yaml
+      time_dimension:
+        dimension: sales.created_at
+        granularity: day
+      ```
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  trendline:
+    color: "#3B82F6"
+    time_dimension:
+      dimension: sales.created_at
+      granularity: day
+  ```
+</ResponseField>
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Простая плитка
+type: tile
+main_measure: sales.total_revenue
+```
+
+```yaml Со сравнением периодов
+type: tile
+main_measure: sales.total_revenue
+compare_period_enabled: true
+compare_formatting_direction: more_better
+```
+
+```yaml С линией тренда
+type: tile
+main_measure: sales.total_revenue
+trendline:
+  color: "#3B82F6"
+  time_dimension:
+    dimension: sales.created_at
+    granularity: day
+```
+
+```yaml С действиями
+type: tile
+main_measure: sales.total_revenue
+data_point_actions_placement: tile
+data_point_actions:
+  - id: "drill-1"
+    key: "dashboard:drill_through"
+    title: "Детализация продаж"
+    icon:
+      library: lucide
+      name: arrow-right
+    target_page_id: "sales-details"
+    filter_mappings:
+      - target_filter_id: "period"
+        sources:
+          - type: source_dashboard_filter
+            source_filter_id: "date_filter"
+```
+
+</CodeGroup>
+
+---
+
+## Multi Tile — Несколько показателей {#multi-tile}
+
+Отображает несколько показателей в ряд (горизонтально или вертикально).
+
+### Поля
+
+<ResponseField name="type" type='"multi_tile"' required>
+  Тип графика
+</ResponseField>
+
+<ResponseField name="measures" type="string[]" required>
+  Список мер для отображения
+  
+  ```yaml
+  measures:
+    - sales.total_revenue
+    - sales.orders_count
+    - sales.average_check
+  ```
+</ResponseField>
+
+<ResponseField name="direction" type="enum" default="horizontal">
+  Направление расположения плиток
+  
+  <Expandable title="Значения">
+    | Значение | Описание |
+    |----------|----------|
+    | `horizontal` | Плитки в ряд (по горизонтали) |
+    | `vertical` | Плитки в столбец (по вертикали) |
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="compare_period_enabled" type="boolean" default="false">
+  Включить сравнение с предыдущим периодом для всех показателей
+</ResponseField>
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Горизонтальная
+type: multi_tile
+measures:
+  - sales.total_revenue
+  - sales.orders_count
+  - sales.average_check
+direction: horizontal
+```
+
+```yaml Вертикальная со сравнением
+type: multi_tile
+measures:
+  - sales.total_revenue
+  - sales.margin
+direction: vertical
+compare_period_enabled: true
+```
+
+</CodeGroup>
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Действия с данными" icon="mouse-pointer-click" href="../features/data-point-actions">
+    Подробнее о Data Point Actions и drill-through
+  </Card>
+  <Card title="Измерения" icon="layer-group" href="../features/dimensions">
+    Типы измерений и временные гранулярности
+  </Card>
+</CardGroup>
+
+---
+
+← [Обзор графиков](./index) | → [Таблицы](./table)
