@@ -3,25 +3,12 @@ title: "Плитка (Tile)"
 description: "Графики для отображения ключевых показателей (KPI)"
 ---
 
-<img src="/assets/img/charts/tile/tile_example.png" width="300" alt="Пример Tile графика">
+<img src="/assets/img/charts/tile/tile_example.png" width="300" alt="Пример Tile графика" />
 
 
 Графики типа Tile предназначены для отображения ключевых показателей (KPI) — одиночных числовых значений с опциональными дополнениями.
 
-## Типы плиток
-
-| Тип          | Описание              |
-| ------------ | --------------------- |
-| `tile`       | Одиночный показатель  |
-| `multi_tile` | Несколько показателей |
-
 ---
-
-
-
-## Tile — Одиночный показатель
-
-Отображает один ключевой показатель с возможностью сравнения периодов и линией тренда.
 
 ### Поля
 
@@ -261,69 +248,6 @@ data_point_actions:
         sources:
           - type: source_dashboard_filter
             source_filter_id: "a7b8c9d0-1234-56a1-2345-789abcdef012"
-```
-
-</CodeGroup>
-
----
-
-## Multi Tile — Несколько показателей
-
-Отображает несколько показателей в ряд (горизонтально или вертикально).
-
-### Поля
-
-<ResponseField name="type" type='"multi_tile"' required>
-  Тип графика
-</ResponseField>
-
-<ResponseField name="measures" type="string[]" required>
-  Список мер для отображения
-
-  ```yaml
-  measures:
-    - sales.total_revenue
-    - sales.orders_count
-    - sales.average_check
-  ```
-</ResponseField>
-
-<ResponseField name="direction" type="enum" default="horizontal">
-  Направление расположения плиток
-
-  <Expandable title="Значения">
-    | Значение     | Описание                        |
-    | ------------ | ------------------------------- |
-    | `horizontal` | Плитки в ряд (по горизонтали)   |
-    | `vertical`   | Плитки в столбец (по вертикали) |
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="compare_period_enabled" type="boolean" default="false">
-  Включить сравнение с предыдущим периодом для всех показателей
-</ResponseField>
-
-### Примеры
-
-<CodeGroup>
-
-```yaml Горизонтальная
-type: multi_tile
-measures:
-  - sales.total_revenue
-  - sales.orders_count
-  - sales.average_check
-direction: horizontal
-```
-
-
-```yaml Вертикальная со сравнением
-type: multi_tile
-measures:
-  - sales.total_revenue
-  - sales.margin
-direction: vertical
-compare_period_enabled: true
 ```
 
 </CodeGroup>
