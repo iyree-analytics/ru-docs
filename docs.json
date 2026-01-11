@@ -9,6 +9,9 @@
   "colors": {
     "primary": "#006C84"
   },
+  "icons": {
+    "library": "lucide"
+  },
   "logo": {
     "light": "/assets/img/logo_light.svg",
     "dark": "/assets/img/logo_light.svg"
@@ -40,7 +43,7 @@
         ]
       },
       {
-        "group": "Готовая аналитика для ресторанов",
+        "group": "Аналитика для ресторанов",
         "icon": "chef-hat",
         "pages": [
           "domain/restaurants/intro",
@@ -66,7 +69,7 @@
         "group": "BI функционал",
         "icon": "layout-dashboard",
         "pages": [
-          "bi/intro",
+          "bi/index",
           {
             "group": "Графики",
             "pages": [
