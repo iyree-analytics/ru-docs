@@ -19,13 +19,13 @@
   },
   "navbar": {
     "links": [
-      { "label": "Status", "href": "https://status.example.com" },
-      { "label": "Pricing", "href": "https://example.com/pricing" }
+      { "label": "API документация", "href": "https://status.example.com" },
+      { "label": "Тарифы", "href": "https://iyree.ru/#plans" }
     ],
     "primary": {
       "type": "button",
-      "label": "Get Started",
-      "href": "https://example.com/start"
+      "label": "Попробовать бесплатно",
+      "href": "https://iyree.ru/#contact"
     }
   },
   "navigation": {
