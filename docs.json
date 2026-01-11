@@ -73,7 +73,31 @@
             "group": "Графики",
             "pages": [
               "bi/charts/index",
-              "bi/charts/tile"
+              "bi/charts/tile",
+              "bi/charts/table-v2",
+              "bi/charts/pivot-table-v2",
+              "bi/charts/bar-v2",
+              "bi/charts/pie",
+              "bi/charts/dynamic",
+              {
+                "group": "Расширенные возможности графиков",
+                "pages": [
+                  "bi/charts/features/index",
+                  "bi/charts/features/sorting",
+                  "bi/charts/features/conditional-formatting",
+                  "bi/charts/features/dimensions",
+                  "bi/charts/features/dimension-hierarchy",
+                  "bi/charts/features/data-point-actions",
+                  "bi/charts/features/selectable-fields"
+                ]
+              },
+              {
+                "group": "Справочник типов",
+                "pages": [
+                  "bi/charts/reference/index",
+                  "bi/charts/reference/types"
+                ]
+              }
             ]
           }
         ]

@@ -1,0 +1,557 @@
+---
+title: "Сводные таблицы (Pivot Table)"
+description: "Сводные таблицы для многомерного анализа данных"
+---
+
+Сводная таблица с поддержкой иерархий, группировки, условного форматирования и выбираемых полей.
+
+### Поля
+
+<ResponseField name="type" type='"pivot_table_v2"' required>
+  Тип графика
+</ResponseField>
+
+<ResponseField name="columns" type="PivotTableColumn[]">
+  Измерения в колонках таблицы. Используйте либо `columns`, либо `selectable_columns`.
+  
+  <Expandable title="Структура PivotTableColumn">
+    <ResponseField name="type" type="enum" default="dimension">
+      Тип: `dimension`
+    </ResponseField>
+    
+    <ResponseField name="member" type="CubeDimension" required>
+      Измерение
+      
+      <Expandable title="Структура CubeDimension">
+        **Обычное измерение:**
+        ```yaml
+        kind: basic
+        value: products.category
+        ```
+        
+        **Временное измерение:**
+        ```yaml
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: month
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Заголовок колонки
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  columns:
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: month
+      title: Месяц
+  ```
+</ResponseField>
+
+<ResponseField name="selectable_columns" type="SelectableField">
+  Выбираемые измерения для колонок (вместо `columns`)
+  
+  <Expandable title="Структура SelectableField">
+    <ResponseField name="type" type="enum" required>
+      Тип выбора: `single` | `multiple`
+    </ResponseField>
+    
+    <ResponseField name="hint" type="string">
+      Подсказка для пользователя
+    </ResponseField>
+    
+    <ResponseField name="options" type="SelectableOption[]" required>
+      Варианты для выбора
+      
+      <Expandable title="Структура SelectableOption">
+        <ResponseField name="member" type="CubeDimension" required>
+          Измерение
+        </ResponseField>
+        <ResponseField name="title" type="string">
+          Заголовок варианта
+        </ResponseField>
+        <ResponseField name="selected" type="boolean">
+          Выбрано по умолчанию (для multiple)
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  selectable_columns:
+    type: single
+    hint: Выберите период
+    options:
+      - member:
+          kind: time
+          value:
+            dimension: sales.created_at
+            granularity: week
+        title: По неделям
+      - member:
+          kind: time
+          value:
+            dimension: sales.created_at
+            granularity: month
+        title: По месяцам
+  ```
+</ResponseField>
+
+<ResponseField name="rows" type="PivotTableRow[]">
+  Измерения в строках таблицы. Используйте либо `rows`, либо `selectable_rows`.
+  
+  <Expandable title="Типы строк">
+    ### dimension — Простое измерение
+    
+    <ResponseField name="type" type='"dimension"' default="dimension">
+      Тип строки
+    </ResponseField>
+    
+    <ResponseField name="member" type="CubeDimension" required>
+      Измерение
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Заголовок
+    </ResponseField>
+    
+    <ResponseField name="column_width" type="number">
+      Ширина колонки
+    </ResponseField>
+    
+    <ResponseField name="conditional_formatting" type="DimensionConditionalFormatting">
+      Форматирование по значениям
+      
+      ```yaml
+      conditional_formatting:
+        type: text
+        values:
+          "Иванов": [33, 150, 243]
+          "Петров": [76, 175, 80]
+      ```
+    </ResponseField>
+    
+    ---
+    
+    ### dimension_hierarchy — Иерархия с drill-down
+    
+    <ResponseField name="type" type='"dimension_hierarchy"' required>
+      Тип строки
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Общий заголовок
+    </ResponseField>
+    
+    <ResponseField name="levels" type="HierarchyLevel[]" required>
+      Уровни иерархии
+      
+      ```yaml
+      levels:
+        - member:
+            kind: basic
+            value: geography.country
+          title: Страна
+        - member:
+            kind: basic
+            value: geography.region
+          title: Регион
+        - member:
+            kind: basic
+            value: geography.city
+          title: Город
+      ```
+    </ResponseField>
+    
+    ---
+    
+    ### dimension_row_grouping — Группировка строк
+    
+    <ResponseField name="type" type='"dimension_row_grouping"' required>
+      Тип строки
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Заголовок
+    </ResponseField>
+    
+    <ResponseField name="levels" type="HierarchyLevel[]" required>
+      Уровни группировки
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="selectable_rows" type="SelectableField">
+  Выбираемые измерения для строк (структура аналогична `selectable_columns`)
+</ResponseField>
+
+<ResponseField name="measures" type="PivotTableMeasure[]">
+  Меры для отображения. Используйте либо `measures`, либо `selectable_measures`.
+  
+  <Expandable title="Структура PivotTableMeasure">
+    <ResponseField name="type" type='"measure"' default="measure">
+      Тип поля
+    </ResponseField>
+    
+    <ResponseField name="member" type="string" required>
+      Имя меры из куба
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Заголовок
+    </ResponseField>
+    
+    <ResponseField name="column_width" type="number">
+      Ширина колонки (em)
+    </ResponseField>
+    
+    <ResponseField name="conditional_formatting" type="PivotTableMeasureConditionalFormatting">
+      Условное форматирование
+      
+      <Expandable title="Структура">
+        <ResponseField name="conditional_formatting" type="MeasureConditionalFormatting" required>
+          Настройки форматирования (вложенный объект)
+          
+          ```yaml
+          type: background
+          filling_type: gradient
+          gradient:
+            type: three_colors
+            palette: red_white_green
+            thresholds:
+              min_value: 0
+              middle_value: 100
+              max_value: 150
+          ```
+        </ResponseField>
+        
+        <ResponseField name="display_in_totals" type="boolean" default="false">
+          Показывать форматирование в итоговых строках
+        </ResponseField>
+      </Expandable>
+      
+      ```yaml
+      conditional_formatting:
+        conditional_formatting:
+          type: background
+          filling_type: gradient
+          gradient:
+            type: three_colors
+            palette: red_yellow_green
+        display_in_totals: true
+      ```
+    </ResponseField>
+    
+    <ResponseField name="linear_indicator" type="PivotTableMeasureLinearIndicator">
+      Линейный индикатор
+      
+      <Expandable title="Структура">
+        <ResponseField name="main_color" type="RGBColor" required>
+          Основной цвет `[R, G, B]`
+        </ResponseField>
+        
+        <ResponseField name="negative_color" type="RGBColor">
+          Цвет для отрицательных значений
+        </ResponseField>
+        
+        <ResponseField name="display_in_totals" type="boolean" default="false">
+          Показывать в итогах
+        </ResponseField>
+        
+        <ResponseField name="scope" type="enum" default="column">
+          Область расчёта: `column` | `table`
+        </ResponseField>
+      </Expandable>
+      
+      ```yaml
+      linear_indicator:
+        main_color: [66, 133, 244]
+        negative_color: [234, 67, 53]
+        display_in_totals: false
+        scope: column
+      ```
+    </ResponseField>
+    
+    <ResponseField name="data_point_actions" type="DataPointActionDefinition[]">
+      Действия при клике на ячейку
+      
+      <Expandable title="Структура DataPointActionDefinition">
+        <ResponseField name="id" type="string" required>
+          UUID действия
+        </ResponseField>
+        <ResponseField name="key" type="string" required>
+          Ключ: `common:copy_value` | `common:view_raw_data` | `link:open` | `dashboard:drill_through` | `dashboard:another_dashboard_drill_through`
+        </ResponseField>
+        <ResponseField name="title" type="string" required>
+          Текст в меню
+        </ResponseField>
+        <ResponseField name="target_page_id" type="string">
+          UUID целевой страницы
+        </ResponseField>
+        <ResponseField name="filter_mappings" type="DrillThroughFilterMapping[]">
+          Маппинг фильтров
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  measures:
+    - member: sales.revenue
+      title: Выручка
+    - member: sales.quantity
+      title: Количество
+  ```
+</ResponseField>
+
+<ResponseField name="selectable_measures" type="SelectableMeasureField">
+  Выбираемые меры
+  
+  <Expandable title="Структура SelectableMeasureField">
+    <ResponseField name="type" type="enum" required>
+      Тип: `single` | `multiple`
+    </ResponseField>
+    
+    <ResponseField name="hint" type="string">
+      Подсказка
+    </ResponseField>
+    
+    <ResponseField name="options" type="SelectableMeasureOption[]" required>
+      Варианты
+      
+      <Expandable title="Структура опции">
+        <ResponseField name="member" type="string" required>
+          Имя меры
+        </ResponseField>
+        <ResponseField name="title" type="string">
+          Заголовок
+        </ResponseField>
+        <ResponseField name="selected" type="boolean">
+          Выбрано по умолчанию
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  selectable_measures:
+    type: multiple
+    hint: Выберите показатели
+    options:
+      - member: sales.revenue
+        title: Выручка
+        selected: true
+      - member: sales.quantity
+        title: Количество
+        selected: true
+      - member: sales.margin
+        title: Маржа
+        selected: false
+  ```
+</ResponseField>
+
+<ResponseField name="compare_period_enabled" type="boolean" default="false">
+  Сравнение периодов
+</ResponseField>
+
+<ResponseField name="fixed_dimension_columns" type="boolean" default="true">
+  Зафиксировать колонки измерений при горизонтальном скролле
+</ResponseField>
+
+<ResponseField name="include_rows_totals" type="boolean" default="false">
+  Показать итоги по строкам
+</ResponseField>
+
+<ResponseField name="include_columns_totals" type="boolean" default="false">
+  Показать итоги по колонкам
+</ResponseField>
+
+<ResponseField name="toned" type="boolean" default="false">
+  Чередование цвета строк (зебра)
+</ResponseField>
+
+<ResponseField name="period_diff" type="boolean" default="false">
+  Добавить колонку разницы периодов
+</ResponseField>
+
+<ResponseField name="sorting" type="PivotTableSorting[]">
+  Сортировка данных
+  
+  <Expandable title="Структура PivotTableSorting">
+    <ResponseField name="member" type="string" required>
+      Имя меры или измерения для сортировки
+    </ResponseField>
+    
+    <ResponseField name="direction" type="enum" required>
+      Направление: `asc` | `desc`
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  sorting:
+    - member: sales.revenue
+      direction: desc
+  ```
+</ResponseField>
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Базовая сводная таблица
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+rows:
+  - member:
+      kind: basic
+      value: products.category
+    title: Категория
+measures:
+  - member: sales.revenue
+    title: Выручка
+  - member: sales.quantity
+    title: Количество
+include_rows_totals: true
+include_columns_totals: true
+```
+
+```yaml С иерархией и форматированием
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: quarter
+    title: Квартал
+rows:
+  - type: dimension_hierarchy
+    title: Расположение
+    levels:
+      - member:
+          kind: basic
+          value: stores.region
+        title: Регион
+      - member:
+          kind: basic
+          value: stores.city
+        title: Город
+      - member:
+          kind: basic
+          value: stores.name
+        title: Магазин
+measures:
+  - member: sales.revenue
+    title: Выручка
+    linear_indicator:
+      main_color: [76, 175, 80]
+      scope: column
+  - member: sales.plan_completion
+    title: Выполнение плана %
+    conditional_formatting:
+      conditional_formatting:
+        type: background
+        filling_type: gradient
+        gradient:
+          type: three_colors
+          palette: red_yellow_green
+          thresholds:
+            min_value: 0
+            middle_value: 100
+            max_value: 150
+      display_in_totals: true
+fixed_dimension_columns: true
+toned: true
+include_rows_totals: true
+sorting:
+  - member: sales.revenue
+    direction: desc
+```
+
+```yaml С выбираемыми полями
+type: pivot_table_v2
+
+selectable_columns:
+  type: single
+  hint: Период
+  options:
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: week
+      title: Неделя
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: month
+      title: Месяц
+
+selectable_rows:
+  type: single
+  hint: Разрез
+  options:
+    - member:
+        kind: basic
+        value: products.category
+      title: Категория
+    - member:
+        kind: basic
+        value: managers.name
+      title: Менеджер
+
+selectable_measures:
+  type: multiple
+  hint: Показатели
+  options:
+    - member: sales.revenue
+      title: Выручка
+      selected: true
+    - member: sales.orders_count
+      title: Заказы
+      selected: true
+    - member: sales.average_check
+      title: Средний чек
+      selected: false
+
+include_rows_totals: true
+```
+
+</CodeGroup>
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Иерархии измерений" icon="sitemap" href="../features/dimension-hierarchy">
+    Drill-down и группировка
+  </Card>
+  <Card title="Условное форматирование" icon="palette" href="../features/conditional-formatting">
+    Цвета и градиенты
+  </Card>
+  <Card title="Выбираемые поля" icon="list-check" href="../features/selectable-fields">
+    Динамический выбор полей
+  </Card>
+  <Card title="Сортировка" icon="arrow-down-a-z" href="../features/sorting">
+    Настройка порядка данных
+  </Card>
+</CardGroup>
+
+---
+
+← [Таблицы](./table) | → [Столбчатые диаграммы](./bar)

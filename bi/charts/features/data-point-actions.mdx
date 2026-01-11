@@ -1,0 +1,549 @@
+---
+title: "Действия с данными (Data Point Actions)"
+description: "Интерактивные действия при клике на элементы графика"
+---
+
+Data Point Actions позволяют добавлять интерактивные действия при клике на элементы графика.
+
+## Обзор
+
+Действия привязываются к точкам данных (ячейкам таблицы, столбцам диаграммы, секторам круговой диаграммы). При клике появляется контекстное меню с доступными действиями.
+
+### Типы действий
+
+| Ключ | Описание |
+|------|----------|
+| `link:open` | Открыть ссылку |
+| `dashboard:drill_through` | Переход на страницу дашборда |
+| `dashboard:another_dashboard_drill_through` | Переход на другой дашборд |
+| `custom:*` | Кастомное действие (не поддерживается) |
+
+### Поддержка в графиках
+
+| График | Где определяется |
+|--------|------------------|
+| Tile | `data_point_actions` на уровне графика |
+| Table v2 | `data_point_actions` на уровне колонки |
+| Pivot Table v2 | `data_point_actions` на уровне меры |
+| Bar v2 | `data_point_actions` на уровне меры |
+| Pie | `data_point_actions` на уровне меры |
+
+---
+
+## Структура действия
+
+<ResponseField name="id" type="string" required>
+  Уникальный идентификатор действия (UUID)
+  
+  ```yaml
+  id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+  ```
+</ResponseField>
+
+<ResponseField name="key" type="string" required>
+  Ключ действия в формате `namespace:action`
+  
+  <Expandable title="Доступные ключи">
+    | Ключ | Описание |
+    |------|----------|
+    | `common:copy_value` | Копировать значение |
+    | `common:view_raw_data` | Просмотр исходных данных |
+    | `link:open` | Открыть URL |
+    | `dashboard:drill_through` | Переход на страницу |
+    | `dashboard:another_dashboard_drill_through` | Переход на другой дашборд |
+    | `custom:{action_name}` | Кастомное действие |
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Текст, отображаемый в контекстном меню
+</ResponseField>
+
+<ResponseField name="icon" type="IconReference">
+  Иконка действия
+  
+  <Expandable title="Структура IconReference">
+    <ResponseField name="library" type="string" required>
+      Библиотека иконок: `lucide`
+    </ResponseField>
+    
+    <ResponseField name="name" type="string" required>
+      Имя иконки
+      
+      | Имя | Описание |
+      |-----|----------|
+      | `copy` | Копировать |
+      | `external-link` | Внешняя ссылка |
+      | `arrow-right` | Стрелка вправо |
+      | `eye` | Просмотр |
+      | `table` | Таблица |
+      | `share` | Поделиться |
+    </ResponseField>
+    
+    <ResponseField name="color" type="RGBColor">
+      Цвет иконки `[R, G, B]`
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  icon:
+    library: lucide
+    name: external-link
+    color: [66, 133, 244]
+  ```
+</ResponseField>
+
+<ResponseField name="placement" type="DataPointActionPlacement">
+  Позиционирование в контекстном меню
+  
+  <Expandable title="Структура DataPointActionPlacement">
+    <ResponseField name="menu_path" type="string[]">
+      Путь в подменю
+      
+      ```yaml
+      menu_path: ["Экспорт", "Подменю"]
+      ```
+    </ResponseField>
+    
+    <ResponseField name="group" type="ActionGroup">
+      Группа действий
+      
+      <Expandable title="Структура ActionGroup">
+        <ResponseField name="id" type="string" required>
+          ID группы
+        </ResponseField>
+        <ResponseField name="label" type="string">
+          Заголовок группы
+        </ResponseField>
+        <ResponseField name="order" type="number">
+          Порядок группы в меню
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="order" type="number">
+      Порядок внутри группы
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  placement:
+    group:
+      id: "navigation"
+      label: "Навигация"
+      order: 1
+    order: 1
+  ```
+</ResponseField>
+
+---
+
+## Типы действий
+
+### Copy Value — Копировать значение
+
+Копирует значение ячейки в буфер обмена.
+
+```yaml
+data_point_actions:
+  - id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    key: "common:copy_value"
+    title: "Копировать значение"
+    icon:
+      library: lucide
+      name: copy
+```
+
+### View Raw Data — Исходные данные
+
+Открывает модальное окно с исходными данными.
+
+```yaml
+data_point_actions:
+  - id: "a1b2c3d4-5678-90ab-cdef-1234567890ab"
+    key: "common:view_raw_data"
+    title: "Показать данные"
+    icon:
+      library: lucide
+      name: table
+```
+
+### Link Open — Открыть ссылку
+
+Открывает URL с подстановкой значений.
+
+<ResponseField name="url" type="string" required>
+  URL для открытия. Поддерживает подстановку `{cube.member}`.
+  
+  ```yaml
+  url: "https://crm.example.com/order/{orders.order_id}"
+  ```
+</ResponseField>
+
+<ResponseField name="open_in" type="enum" default="new_tab">
+  Где открывать ссылку
+  
+  | Значение | Описание |
+  |----------|----------|
+  | `same_tab` | В текущей вкладке |
+  | `new_tab` | В новой вкладке |
+</ResponseField>
+
+```yaml
+data_point_actions:
+  - id: "b2c3d4e5-6789-01bc-def0-234567890abc"
+    key: "link:open"
+    title: "Открыть в CRM"
+    icon:
+      library: lucide
+      name: external-link
+    url: "https://crm.example.com/order/{orders.order_id}"
+    open_in: new_tab
+```
+
+<Info>
+  Используйте `{cube.member}` для подстановки значений из точки данных. Например, `{orders.order_id}` подставит ID заказа.
+</Info>
+
+### Drill Through — Переход на страницу дашборда
+
+Переход на другую страницу текущего дашборда с передачей фильтров.
+
+<ResponseField name="target_page_id" type="string" required>
+  UUID целевой страницы
+</ResponseField>
+
+<ResponseField name="filter_mappings" type="DrillThroughFilterMapping[]">
+  Маппинг фильтров (см. раздел ниже)
+</ResponseField>
+
+```yaml
+data_point_actions:
+  - id: "c3d4e5f6-7890-12cd-ef01-34567890abcd"
+    key: "dashboard:drill_through"
+    title: "Детали категории"
+    target_page_id: "d4e5f6a7-8901-23de-f012-456789abcdef"
+    filter_mappings:
+      - target_filter_id: "e5f6a7b8-9012-34ef-0123-56789abcdef0"
+        sources:
+          - type: data_point_dimension
+            member_name: products.category
+```
+
+### Another Dashboard Drill Through — Переход на другой дашборд
+
+Переход на страницу другого дашборда.
+
+<ResponseField name="target_dashboard_id" type="string" required>
+  UUID целевого дашборда
+</ResponseField>
+
+<ResponseField name="target_page_id" type="string" required>
+  UUID целевой страницы
+</ResponseField>
+
+<ResponseField name="open_in_new_tab" type="boolean" default="false">
+  Открывать в новой вкладке браузера
+</ResponseField>
+
+<ResponseField name="filter_mappings" type="DrillThroughFilterMapping[]">
+  Маппинг фильтров
+</ResponseField>
+
+```yaml
+data_point_actions:
+  - id: "f6a7b8c9-0123-45f0-1234-6789abcdef01"
+    key: "dashboard:another_dashboard_drill_through"
+    title: "Открыть отчёт продаж"
+    target_dashboard_id: "a7b8c9d0-1234-56a1-2345-789abcdef012"
+    target_page_id: "b8c9d0e1-2345-67b2-3456-89abcdef0123"
+    open_in_new_tab: true
+    filter_mappings:
+      - target_filter_id: "c9d0e1f2-3456-78c3-4567-9abcdef01234"
+        sources:
+          - type: source_dashboard_filter
+            source_filter_id: "d0e1f2a3-4567-89d4-5678-abcdef012345"
+```
+
+### Custom Action — Кастомное действие
+
+Произвольное действие с дополнительной конфигурацией.
+
+<ResponseField name="config" type="Dict">
+  Дополнительные параметры для обработчика
+</ResponseField>
+
+```yaml
+data_point_actions:
+  - id: "e1f2a3b4-5678-90e5-6789-bcdef0123456"
+    key: "myapp:send_to_slack"
+    title: "Отправить в Slack"
+    icon:
+      library: lucide
+      name: share
+    config:
+      channel: "#sales-alerts"
+      template: "Новый заказ: {orders.order_number}"
+```
+
+---
+
+## Маппинг фильтров (Filter Mappings)
+
+Определяет, как данные из точки клика передаются в фильтры целевой страницы.
+
+### Структура
+
+<ResponseField name="target_filter_id" type="string" required>
+  UUID фильтра на целевой странице
+</ResponseField>
+
+<ResponseField name="sources" type="FilterSource[]" required>
+  Источники данных для фильтра
+  
+  <Expandable title="Типы источников">
+    ### data_point_dimension
+    
+    Берёт значение измерения из точки клика.
+    
+    <ResponseField name="type" type='"data_point_dimension"' required>
+      Тип источника
+    </ResponseField>
+    
+    <ResponseField name="member_name" type="string" required>
+      Имя измерения
+    </ResponseField>
+    
+    ```yaml
+    sources:
+      - type: data_point_dimension
+        member_name: products.category
+    ```
+    
+    ---
+    
+    ### data_point_time_dimension
+    
+    Берёт значение временного измерения с учётом гранулярности.
+    
+    <ResponseField name="type" type='"data_point_time_dimension"' required>
+      Тип источника
+    </ResponseField>
+    
+    <ResponseField name="member_name" type="string" required>
+      Имя временного измерения
+    </ResponseField>
+    
+    <ResponseField name="granularity" type="enum">
+      Гранулярность (опционально)
+    </ResponseField>
+    
+    ```yaml
+    sources:
+      - type: data_point_time_dimension
+        member_name: sales.created_at
+        granularity: month
+    ```
+    
+    ---
+    
+    ### source_dashboard_filter
+    
+    Передаёт значение фильтра с текущей страницы.
+    
+    <ResponseField name="type" type='"source_dashboard_filter"' required>
+      Тип источника
+    </ResponseField>
+    
+    <ResponseField name="source_filter_id" type="string" required>
+      UUID фильтра на текущей странице
+    </ResponseField>
+    
+    ```yaml
+    sources:
+      - type: source_dashboard_filter
+        source_filter_id: "f2a3b4c5-6789-01f6-7890-cdef01234567"
+    ```
+  </Expandable>
+</ResponseField>
+
+### Пример комплексного маппинга
+
+```yaml
+filter_mappings:
+  # Передать категорию из точки клика
+  - target_filter_id: "a3b4c5d6-7890-12a7-8901-def012345678"
+    sources:
+      - type: data_point_dimension
+        member_name: products.category
+  
+  # Передать период из текущего фильтра
+  - target_filter_id: "b4c5d6e7-8901-23b8-9012-ef0123456789"
+    sources:
+      - type: source_dashboard_filter
+        source_filter_id: "c5d6e7f8-9012-34c9-0123-f01234567890"
+  
+  # Передать месяц из точки клика
+  - target_filter_id: "d6e7f8a9-0123-45d0-1234-012345678901"
+    sources:
+      - type: data_point_time_dimension
+        member_name: sales.created_at
+        granularity: month
+```
+
+---
+
+## Полные примеры
+
+<CodeGroup>
+
+```yaml Таблица с действиями
+type: table_v2
+columns:
+  - type: dimension
+    member:
+      kind: basic
+      value: orders.order_number
+    title: Номер заказа
+    data_point_actions:
+      - id: "e7f8a9b0-1234-56e1-2345-123456789012"
+        key: "common:copy_value"
+        title: "Копировать номер"
+        icon:
+          library: lucide
+          name: copy
+        placement:
+          order: 1
+      
+      - id: "f8a9b0c1-2345-67f2-3456-234567890123"
+        key: "link:open"
+        title: "Открыть в CRM"
+        icon:
+          library: lucide
+          name: external-link
+        url: "https://crm.example.com/orders/{orders.order_id}"
+        open_in: new_tab
+        placement:
+          order: 2
+      
+      - id: "a9b0c1d2-3456-78a3-4567-345678901234"
+        key: "dashboard:drill_through"
+        title: "Детали заказа"
+        icon:
+          library: lucide
+          name: arrow-right
+        target_page_id: "b0c1d2e3-4567-89b4-5678-456789012345"
+        filter_mappings:
+          - target_filter_id: "c1d2e3f4-5678-90c5-6789-567890123456"
+            sources:
+              - type: data_point_dimension
+                member_name: orders.order_id
+        placement:
+          group:
+            id: "navigation"
+            label: "Навигация"
+          order: 1
+  
+  - type: measure
+    member: orders.total
+    title: Сумма
+```
+
+```yaml Плитка с drill-through
+type: tile
+main_measure: sales.total_revenue
+data_point_actions_placement: tile
+data_point_actions:
+  - id: "d2e3f4a5-6789-01d6-7890-678901234567"
+    key: "dashboard:drill_through"
+    title: "Детализация продаж"
+    icon:
+      library: lucide
+      name: arrow-right
+    target_page_id: "e3f4a5b6-7890-12e7-8901-789012345678"
+    filter_mappings:
+      - target_filter_id: "f4a5b6c7-8901-23f8-9012-890123456789"
+        sources:
+          - type: source_dashboard_filter
+            source_filter_id: "a5b6c7d8-9012-34a9-0123-901234567890"
+```
+
+```yaml Столбчатая диаграмма
+type: bar_v2
+main_dimension:
+  dimension:
+    kind: basic
+    value: products.category
+  title: Категория
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+  data_point_actions:
+    - id: "b6c7d8e9-0123-45b0-1234-012345678901"
+      key: "common:view_raw_data"
+      title: "Исходные данные"
+      icon:
+        library: lucide
+        name: table
+    
+    - id: "c7d8e9f0-1234-56c1-2345-123456789012"
+      key: "dashboard:drill_through"
+      title: "Товары категории"
+      icon:
+        library: lucide
+        name: arrow-right
+      target_page_id: "d8e9f0a1-2345-67d2-3456-234567890123"
+      filter_mappings:
+        - target_filter_id: "e9f0a1b2-3456-78e3-4567-345678901234"
+          sources:
+            - type: data_point_dimension
+              member_name: products.category
+```
+
+</CodeGroup>
+
+---
+
+## Рекомендации
+
+<Steps>
+  <Step title="Понятные названия">
+    Пользователь должен понимать, что произойдёт при клике
+  </Step>
+  
+  <Step title="Группировка действий">
+    Используйте `placement.group` для логической группировки
+  </Step>
+  
+  <Step title="Не перегружайте меню">
+    3-5 действий обычно достаточно
+  </Step>
+  
+  <Step title="Добавьте иконки">
+    Визуальные подсказки улучшают UX
+  </Step>
+  
+  <Step title="Тестируйте маппинг">
+    Убедитесь, что фильтры на целевой странице существуют
+  </Step>
+</Steps>
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Базовые типы" icon="book" href="../reference/types">
+    IconReference и другие типы
+  </Card>
+  <Card title="Таблицы" icon="table" href="../charts/table">
+    Действия в таблицах
+  </Card>
+  <Card title="Сводные таблицы" icon="table-cells" href="../charts/pivot-table">
+    Действия в сводных таблицах
+  </Card>
+</CardGroup>
+
+---
+
+← [Иерархии измерений](./dimension-hierarchy) | → [Условное форматирование](./conditional-formatting)

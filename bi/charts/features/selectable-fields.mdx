@@ -1,0 +1,480 @@
+---
+title: "Выбираемые поля (Selectable Fields)"
+description: "Динамический выбор измерений и мер пользователем"
+---
+
+Выбираемые поля позволяют пользователю динамически менять измерения и меры в графике без редактирования конфигурации.
+
+## Обзор
+
+| Тип | Описание |
+|-----|----------|
+| `single` | Выбор одного значения из списка |
+| `multiple` | Выбор нескольких значений |
+
+### Поддержка в графиках
+
+| График | Измерения | Меры |
+|--------|-----------|------|
+| Pivot Table v2 | ✅ columns, rows | ✅ measures |
+| Bar v2 | ✅ main, additional | ✅ main, additional |
+| Pie | ✅ main | ✅ main |
+
+---
+
+## Single — Одиночный выбор
+
+Пользователь выбирает одно значение из списка. Первый вариант выбран по умолчанию.
+
+### Структура
+
+<ResponseField name="type" type='"single"' required>
+  Тип выбора
+</ResponseField>
+
+<ResponseField name="hint" type="string">
+  Подсказка для пользователя (отображается рядом с селектором)
+</ResponseField>
+
+<ResponseField name="options" type="SelectableOption[]" required>
+  Варианты для выбора
+  
+  <Expandable title="Структура SelectableOption для измерений">
+    <ResponseField name="member" type="CubeDimension">
+      Измерение (для выбора измерений)
+      
+      <Expandable title="Структура CubeDimension">
+        **Обычное измерение:**
+        ```yaml
+        kind: basic
+        value: products.category
+        ```
+        
+        **Временное измерение:**
+        ```yaml
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: month
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="dimension" type="CubeDimension">
+      Альтернативное поле для измерения (в Bar/Pie)
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Отображаемое название варианта
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="Структура SelectableOption для мер">
+    <ResponseField name="member" type="string">
+      Имя меры
+    </ResponseField>
+    
+    <ResponseField name="measure" type="string">
+      Альтернативное поле для меры (в Bar/Pie)
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Отображаемое название варианта
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Выбор временной гранулярности
+selectable_columns:
+  type: single
+  hint: Выберите период
+  options:
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: day
+      title: По дням
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: week
+      title: По неделям
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: month
+      title: По месяцам
+```
+
+```yaml Выбор измерения
+selectable_main_dimension:
+  type: single
+  hint: Выберите разрез
+  options:
+    - dimension:
+        kind: basic
+        value: products.category
+      title: По категориям
+    - dimension:
+        kind: basic
+        value: managers.name
+      title: По менеджерам
+    - dimension:
+        kind: basic
+        value: stores.city
+      title: По городам
+```
+
+```yaml Выбор меры
+selectable_main_measure:
+  type: single
+  hint: Выберите показатель
+  options:
+    - measure: sales.revenue
+      title: Выручка
+    - measure: sales.quantity
+      title: Количество
+    - measure: sales.margin
+      title: Маржа
+```
+
+</CodeGroup>
+
+---
+
+## Multiple — Множественный выбор
+
+Пользователь выбирает несколько значений. Флаг `selected` определяет начальное состояние.
+
+### Структура
+
+<ResponseField name="type" type='"multiple"' required>
+  Тип выбора
+</ResponseField>
+
+<ResponseField name="hint" type="string">
+  Подсказка для пользователя
+</ResponseField>
+
+<ResponseField name="options" type="SelectableOption[]" required>
+  Варианты для выбора
+  
+  <Expandable title="Структура SelectableOption">
+    <ResponseField name="member" type="string | CubeDimension">
+      Мера (string) или измерение (CubeDimension)
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Отображаемое название
+    </ResponseField>
+    
+    <ResponseField name="selected" type="boolean" default="false">
+      Выбрано по умолчанию
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Выбор мер
+selectable_measures:
+  type: multiple
+  hint: Выберите показатели
+  options:
+    - member: sales.revenue
+      title: Выручка
+      selected: true
+    - member: sales.quantity
+      title: Количество
+      selected: true
+    - member: sales.margin
+      title: Маржа
+      selected: false
+    - member: sales.average_check
+      title: Средний чек
+      selected: false
+```
+
+```yaml Дополнительные меры в Bar
+selectable_additional_measures:
+  type: multiple
+  hint: Дополнительные показатели
+  options:
+    - measure: sales.quantity
+      title: Количество
+      selected: false
+    - measure: sales.margin
+      title: Маржа
+      selected: true
+    - measure: sales.orders_count
+      title: Заказы
+      selected: false
+```
+
+</CodeGroup>
+
+---
+
+## Применение в графиках
+
+### Pivot Table v2
+
+<CodeGroup>
+
+```yaml Полный пример
+type: pivot_table_v2
+
+selectable_columns:
+  type: single
+  hint: Период
+  options:
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: week
+      title: Неделя
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: month
+      title: Месяц
+    - member:
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: quarter
+      title: Квартал
+
+selectable_rows:
+  type: single
+  hint: Разрез
+  options:
+    - member:
+        kind: basic
+        value: products.category
+      title: Категория
+    - member:
+        kind: basic
+        value: managers.name
+      title: Менеджер
+    - member:
+        kind: basic
+        value: stores.city
+      title: Город
+
+selectable_measures:
+  type: multiple
+  hint: Показатели
+  options:
+    - member: sales.revenue
+      title: Выручка
+      selected: true
+    - member: sales.quantity
+      title: Количество
+      selected: true
+    - member: sales.margin
+      title: Маржа
+      selected: false
+    - member: sales.average_check
+      title: Средний чек
+      selected: false
+
+include_rows_totals: true
+```
+
+</CodeGroup>
+
+### Bar v2
+
+<CodeGroup>
+
+```yaml Полный пример
+type: bar_v2
+direction: vertical
+
+selectable_main_dimension:
+  type: single
+  hint: Разрез
+  options:
+    - dimension:
+        kind: basic
+        value: products.category
+      title: По категориям
+    - dimension:
+        kind: basic
+        value: managers.name
+      title: По менеджерам
+
+selectable_main_measure:
+  type: single
+  hint: Показатель
+  options:
+    - measure: sales.revenue
+      title: Выручка
+    - measure: sales.quantity
+      title: Количество
+
+selectable_additional_measures:
+  type: multiple
+  hint: Дополнительно
+  options:
+    - measure: sales.margin
+      title: Маржа
+      selected: false
+    - measure: sales.average_check
+      title: Средний чек
+      selected: false
+
+show_totals: true
+```
+
+</CodeGroup>
+
+### Pie
+
+<CodeGroup>
+
+```yaml Полный пример
+type: pie
+pie_type: donut
+
+selectable_main_dimension:
+  type: single
+  hint: Разрез
+  options:
+    - dimension:
+        kind: basic
+        value: products.category
+      title: По категориям
+    - dimension:
+        kind: basic
+        value: products.brand
+      title: По брендам
+    - dimension:
+        kind: basic
+        value: managers.name
+      title: По менеджерам
+
+selectable_main_measure:
+  type: single
+  hint: Показатель
+  options:
+    - measure: sales.revenue
+      title: Выручка
+    - measure: sales.quantity
+      title: Количество
+    - measure: orders.count
+      title: Заказы
+
+options:
+  legend:
+    show: true
+    position: right
+```
+
+</CodeGroup>
+
+---
+
+## Комбинирование статических и выбираемых полей
+
+<Warning>
+  Нельзя использовать одновременно статическое поле и его выбираемый аналог. Например, `columns` и `selectable_columns` взаимоисключающие.
+</Warning>
+
+Можно комбинировать статические и выбираемые поля разных типов:
+
+```yaml
+type: pivot_table_v2
+
+# Статические колонки
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+
+# Выбираемые строки
+selectable_rows:
+  type: single
+  hint: Разрез
+  options:
+    - member:
+        kind: basic
+        value: products.category
+      title: Категория
+    - member:
+        kind: basic
+        value: managers.name
+      title: Менеджер
+
+# Выбираемые меры
+selectable_measures:
+  type: multiple
+  hint: Показатели
+  options:
+    - member: sales.revenue
+      title: Выручка
+      selected: true
+    - member: sales.quantity
+      title: Количество
+      selected: true
+```
+
+---
+
+## Рекомендации
+
+<Steps>
+  <Step title="Понятные названия">
+    Используйте `title` для человекочитаемых названий вариантов
+  </Step>
+  
+  <Step title="Разумные умолчания">
+    Для `multiple` отмечайте `selected: true` для наиболее полезных вариантов
+  </Step>
+  
+  <Step title="Информативные подсказки">
+    Используйте `hint` для объяснения, что пользователь выбирает
+  </Step>
+  
+  <Step title="Не перегружайте">
+    5-7 вариантов обычно достаточно. Больше усложняет выбор.
+  </Step>
+</Steps>
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Сводные таблицы" icon="table-cells" href="../charts/pivot-table">
+    Выбираемые поля в Pivot Table
+  </Card>
+  <Card title="Столбчатые диаграммы" icon="chart-bar" href="../charts/bar">
+    Выбираемые поля в Bar
+  </Card>
+  <Card title="Круговые диаграммы" icon="chart-pie" href="../charts/pie">
+    Выбираемые поля в Pie
+  </Card>
+  <Card title="Измерения" icon="layer-group" href="./dimensions">
+    Типы измерений
+  </Card>
+</CardGroup>
+
+---
+
+← [Условное форматирование](./conditional-formatting) | → [Сортировка](./sorting)

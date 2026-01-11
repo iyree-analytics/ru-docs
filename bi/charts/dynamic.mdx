@@ -1,0 +1,432 @@
+---
+title: "Динамические графики (Dynamic Chart)"
+description: "Кастомные визуализации на базе ECharts"
+---
+
+<img src="/assets/img/charts/dynamic/dynamic_example.png" width="600" alt="Пример Dynamic графика" />
+
+Динамические графики позволяют создавать кастомные визуализации с использованием библиотеки [Apache ECharts](https://echarts.apache.org/).
+
+## Обзор
+
+Dynamic Chart предоставляет полный контроль над визуализацией через JavaScript-код, который преобразует данные куба в конфигурацию ECharts.
+
+<Info>
+  Dynamic Chart подходит для случаев, когда стандартные типы графиков не покрывают требования визуализации.
+</Info>
+
+---
+
+## Поля
+
+<ResponseField name="type" type='"dynamic_chart"' required>
+  Тип графика
+</ResponseField>
+
+<ResponseField name="dimensions" type="CubeDimension[]" required>
+  Измерения для запроса данных
+  
+  <Expandable title="Структура CubeDimension">
+    **Обычное измерение:**
+    ```yaml
+    kind: basic
+    value: products.category
+    ```
+    
+    **Временное измерение:**
+    ```yaml
+    kind: time
+    value:
+      dimension: sales.created_at
+      granularity: month
+    ```
+  </Expandable>
+  
+  ```yaml
+  dimensions:
+    - kind: basic
+      value: products.category
+    - kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+  ```
+</ResponseField>
+
+<ResponseField name="measures" type="string[]" required>
+  Меры для запроса данных
+  
+  ```yaml
+  measures:
+    - sales.revenue
+    - sales.quantity
+  ```
+</ResponseField>
+
+<ResponseField name="echarts_options_code" type="string" required>
+  JavaScript-код, возвращающий объект конфигурации ECharts.
+  
+  <Expandable title="Контекст выполнения">
+    Код выполняется в изолированной среде со следующими переменными:
+    
+    <ResponseField name="data" type="object[]">
+      Массив объектов с данными из куба. Каждый объект содержит значения измерений и мер.
+      
+      ```javascript
+      // Пример структуры data:
+      [
+        { "products.category": "Электроника", "sales.revenue": 150000 },
+        { "products.category": "Одежда", "sales.revenue": 80000 },
+        { "products.category": "Продукты", "sales.revenue": 120000 }
+      ]
+      ```
+    </ResponseField>
+    
+    <ResponseField name="echarts" type="object">
+      Библиотека ECharts для использования утилит.
+    </ResponseField>
+    
+    <ResponseField name="theme" type="object">
+      Тема оформления дашборда.
+      
+      ```javascript
+      // Доступные свойства:
+      theme.colors.primary
+      theme.colors.secondary
+      theme.colors.background
+      theme.colors.text
+      ```
+    </ResponseField>
+  </Expandable>
+  
+  <Warning>
+    Код должен возвращать валидный объект конфигурации ECharts. Используйте `return` в конце.
+  </Warning>
+</ResponseField>
+
+<ResponseField name="compare_period_enabled" type="boolean" default="false">
+  Включить сравнение периодов. При включении в `data` добавляются данные за предыдущий период.
+</ResponseField>
+
+---
+
+## Примеры
+
+### Линейный график
+
+<CodeGroup>
+
+```yaml Конфигурация
+type: dynamic_chart
+dimensions:
+  - kind: time
+    value:
+      dimension: sales.created_at
+      granularity: month
+measures:
+  - sales.revenue
+  - sales.quantity
+echarts_options_code: |
+  const months = data.map(d => d['sales.created_at']);
+  const revenue = data.map(d => d['sales.revenue']);
+  const quantity = data.map(d => d['sales.quantity']);
+  
+  return {
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['Выручка', 'Количество']
+    },
+    xAxis: {
+      type: 'category',
+      data: months
+    },
+    yAxis: [
+      { type: 'value', name: 'Выручка' },
+      { type: 'value', name: 'Количество' }
+    ],
+    series: [
+      {
+        name: 'Выручка',
+        type: 'line',
+        data: revenue,
+        smooth: true
+      },
+      {
+        name: 'Количество',
+        type: 'line',
+        yAxisIndex: 1,
+        data: quantity,
+        smooth: true
+      }
+    ]
+  };
+```
+
+</CodeGroup>
+
+### Радарная диаграмма
+
+<CodeGroup>
+
+```yaml Конфигурация
+type: dynamic_chart
+dimensions:
+  - kind: basic
+    value: products.category
+measures:
+  - sales.revenue
+  - sales.quantity
+  - sales.margin
+echarts_options_code: |
+  const categories = data.map(d => d['products.category']);
+  const maxRevenue = Math.max(...data.map(d => d['sales.revenue']));
+  const maxQuantity = Math.max(...data.map(d => d['sales.quantity']));
+  const maxMargin = Math.max(...data.map(d => d['sales.margin']));
+  
+  return {
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: 'Выручка', max: maxRevenue },
+        { name: 'Количество', max: maxQuantity },
+        { name: 'Маржа', max: maxMargin }
+      ]
+    },
+    series: [{
+      type: 'radar',
+      data: categories.map((cat, i) => ({
+        name: cat,
+        value: [
+          data[i]['sales.revenue'],
+          data[i]['sales.quantity'],
+          data[i]['sales.margin']
+        ]
+      }))
+    }]
+  };
+```
+
+</CodeGroup>
+
+### Тепловая карта (Heatmap)
+
+<CodeGroup>
+
+```yaml Конфигурация
+type: dynamic_chart
+dimensions:
+  - kind: basic
+    value: products.category
+  - kind: time
+    value:
+      dimension: sales.created_at
+      granularity: month
+measures:
+  - sales.revenue
+echarts_options_code: |
+  const categories = [...new Set(data.map(d => d['products.category']))];
+  const months = [...new Set(data.map(d => d['sales.created_at']))];
+  
+  const heatmapData = data.map(d => [
+    months.indexOf(d['sales.created_at']),
+    categories.indexOf(d['products.category']),
+    d['sales.revenue']
+  ]);
+  
+  const maxValue = Math.max(...data.map(d => d['sales.revenue']));
+  
+  return {
+    tooltip: {
+      position: 'top',
+      formatter: (params) => {
+        return `${categories[params.value[1]]}<br/>
+                ${months[params.value[0]]}<br/>
+                Выручка: ${params.value[2].toLocaleString()}`;
+      }
+    },
+    xAxis: {
+      type: 'category',
+      data: months,
+      splitArea: { show: true }
+    },
+    yAxis: {
+      type: 'category',
+      data: categories,
+      splitArea: { show: true }
+    },
+    visualMap: {
+      min: 0,
+      max: maxValue,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: 0,
+      inRange: {
+        color: ['#f7fbff', '#08306b']
+      }
+    },
+    series: [{
+      type: 'heatmap',
+      data: heatmapData,
+      label: { show: false }
+    }]
+  };
+```
+
+</CodeGroup>
+
+### Gauge (спидометр)
+
+<CodeGroup>
+
+```yaml Конфигурация
+type: dynamic_chart
+dimensions: []
+measures:
+  - sales.plan_completion
+echarts_options_code: |
+  const value = data[0]?.['sales.plan_completion'] || 0;
+  
+  return {
+    series: [{
+      type: 'gauge',
+      startAngle: 180,
+      endAngle: 0,
+      min: 0,
+      max: 150,
+      splitNumber: 6,
+      axisLine: {
+        lineStyle: {
+          width: 20,
+          color: [
+            [0.66, '#fd666d'],
+            [1, '#67e0e3'],
+            [1.5, '#37a2da']
+          ]
+        }
+      },
+      pointer: {
+        itemStyle: {
+          color: 'auto'
+        }
+      },
+      axisTick: {
+        distance: -20,
+        length: 8,
+        lineStyle: { color: '#fff', width: 2 }
+      },
+      splitLine: {
+        distance: -20,
+        length: 20,
+        lineStyle: { color: '#fff', width: 4 }
+      },
+      axisLabel: {
+        color: 'inherit',
+        distance: 30,
+        fontSize: 14
+      },
+      detail: {
+        valueAnimation: true,
+        formatter: '{value}%',
+        color: 'inherit',
+        fontSize: 24
+      },
+      data: [{ value: Math.round(value) }]
+    }]
+  };
+```
+
+</CodeGroup>
+
+### Sankey-диаграмма
+
+<CodeGroup>
+
+```yaml Конфигурация
+type: dynamic_chart
+dimensions:
+  - kind: basic
+    value: traffic.source
+  - kind: basic
+    value: traffic.medium
+  - kind: basic
+    value: traffic.campaign
+measures:
+  - traffic.sessions
+echarts_options_code: |
+  // Создаём узлы и связи для Sankey
+  const nodes = new Set();
+  const links = [];
+  
+  data.forEach(d => {
+    const source = d['traffic.source'];
+    const medium = d['traffic.medium'];
+    const campaign = d['traffic.campaign'];
+    const value = d['traffic.sessions'];
+    
+    nodes.add(source);
+    nodes.add(medium);
+    nodes.add(campaign);
+    
+    links.push({ source, target: medium, value: value / 2 });
+    links.push({ source: medium, target: campaign, value: value / 2 });
+  });
+  
+  return {
+    tooltip: { trigger: 'item' },
+    series: [{
+      type: 'sankey',
+      data: [...nodes].map(name => ({ name })),
+      links: links,
+      emphasis: { focus: 'adjacency' },
+      lineStyle: { color: 'gradient', curveness: 0.5 }
+    }]
+  };
+```
+
+</CodeGroup>
+
+---
+
+## Рекомендации
+
+<Steps>
+  <Step title="Изучите документацию ECharts">
+    Ознакомьтесь с [примерами ECharts](https://echarts.apache.org/examples/) для понимания возможностей.
+  </Step>
+  
+  <Step title="Начните с простого">
+    Создайте базовый график, затем добавляйте сложность постепенно.
+  </Step>
+  
+  <Step title="Обрабатывайте пустые данные">
+    Всегда проверяйте наличие данных: `data[0]?.['measure'] || 0`
+  </Step>
+  
+  <Step title="Используйте тему">
+    Применяйте `theme.colors` для согласованности с остальным дашбордом.
+  </Step>
+</Steps>
+
+<Warning>
+  JavaScript-код выполняется на клиенте. Избегайте тяжёлых вычислений и бесконечных циклов.
+</Warning>
+
+---
+
+## Полезные ссылки
+
+<CardGroup cols={2}>
+  <Card title="ECharts Examples" icon="chart-line" href="https://echarts.apache.org/examples/">
+    Галерея примеров ECharts
+  </Card>
+  <Card title="ECharts Options" icon="gear" href="https://echarts.apache.org/en/option.html">
+    Справочник по опциям
+  </Card>
+</CardGroup>
+
+---
+
+← [Круговые диаграммы](./pie) | [Обзор графиков](./index)

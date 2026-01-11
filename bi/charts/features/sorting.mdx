@@ -1,0 +1,287 @@
+---
+title: "Сортировка (Sorting)"
+description: "Настройка порядка отображения данных в графиках"
+---
+
+Сортировка позволяет управлять порядком отображения данных в таблицах и диаграммах.
+
+## Обзор
+
+### Поддержка в графиках
+
+| График | Поддержка |
+|--------|-----------|
+| Pivot Table v2 | ✅ |
+| Bar v2 | ✅ |
+| Table v2 | Через интерфейс |
+| Pie | ❌ |
+
+---
+
+## Структура
+
+<ResponseField name="sorting" type="SortingRule[]">
+  Массив правил сортировки. Правила применяются в порядке указания.
+  
+  <Expandable title="Структура SortingRule">
+    <ResponseField name="member" type="string" required>
+      Имя меры или измерения для сортировки
+      
+      ```yaml
+      member: sales.revenue
+      ```
+    </ResponseField>
+    
+    <ResponseField name="direction" type="enum" required>
+      Направление сортировки
+      
+      | Значение | Описание |
+      |----------|----------|
+      | `asc` | По возрастанию (A→Z, 0→9) |
+      | `desc` | По убыванию (Z→A, 9→0) |
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Примеры
+
+### Сортировка по мере
+
+<CodeGroup>
+
+```yaml По убыванию выручки
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+rows:
+  - member:
+      kind: basic
+      value: products.category
+    title: Категория
+measures:
+  - member: sales.revenue
+    title: Выручка
+sorting:
+  - member: sales.revenue
+    direction: desc
+```
+
+```yaml По возрастанию количества
+type: bar_v2
+main_dimension:
+  dimension:
+    kind: basic
+    value: products.category
+  title: Категория
+main_measure:
+  measure: sales.quantity
+  title: Количество
+sorting:
+  - member: sales.quantity
+    direction: asc
+```
+
+</CodeGroup>
+
+### Сортировка по измерению
+
+```yaml
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+rows:
+  - member:
+      kind: basic
+      value: managers.name
+    title: Менеджер
+measures:
+  - member: sales.revenue
+    title: Выручка
+sorting:
+  - member: managers.name
+    direction: asc  # Алфавитный порядок
+```
+
+### Множественная сортировка
+
+Правила применяются последовательно: сначала по первому полю, затем по второму для равных значений.
+
+```yaml
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+rows:
+  - member:
+      kind: basic
+      value: products.category
+    title: Категория
+  - member:
+      kind: basic
+      value: products.name
+    title: Товар
+measures:
+  - member: sales.revenue
+    title: Выручка
+  - member: sales.quantity
+    title: Количество
+sorting:
+  - member: products.category
+    direction: asc
+  - member: sales.revenue
+    direction: desc
+```
+
+---
+
+## Сортировка в Bar v2
+
+Для столбчатых диаграмм сортировка определяет порядок столбцов.
+
+<CodeGroup>
+
+```yaml Топ категорий по выручке
+type: bar_v2
+direction: horizontal
+main_dimension:
+  dimension:
+    kind: basic
+    value: products.category
+  title: Категория
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+sorting:
+  - member: sales.revenue
+    direction: desc
+options:
+  value_bar_axis:
+    show_values: true
+    values_position: outside
+```
+
+```yaml Хронологический порядок
+type: bar_v2
+direction: vertical
+main_dimension:
+  dimension:
+    kind: time
+    value:
+      dimension: sales.created_at
+      granularity: month
+  title: Месяц
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+sorting:
+  - member: sales.created_at
+    direction: asc
+```
+
+</CodeGroup>
+
+---
+
+## Сортировка в Pivot Table v2
+
+В сводных таблицах сортировка влияет на порядок строк.
+
+```yaml
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: quarter
+    title: Квартал
+rows:
+  - type: dimension_hierarchy
+    title: География
+    levels:
+      - member:
+          kind: basic
+          value: geography.region
+        title: Регион
+      - member:
+          kind: basic
+          value: geography.city
+        title: Город
+measures:
+  - member: sales.revenue
+    title: Выручка
+sorting:
+  - member: sales.revenue
+    direction: desc
+include_rows_totals: true
+```
+
+<Info>
+  При использовании иерархий (`dimension_hierarchy`) сортировка применяется на каждом уровне отдельно.
+</Info>
+
+---
+
+## Рекомендации
+
+<Steps>
+  <Step title="Одно правило обычно достаточно">
+    Множественная сортировка нужна редко
+  </Step>
+  
+  <Step title="Сортируйте по значимому полю">
+    Обычно это основная мера графика
+  </Step>
+  
+  <Step title="Учитывайте направление">
+    Для рейтингов — `desc`, для хронологии — `asc`
+  </Step>
+  
+  <Step title="Проверяйте с реальными данными">
+    Убедитесь, что порядок логичен
+  </Step>
+</Steps>
+
+---
+
+## Типичные сценарии
+
+| Сценарий | Поле | Направление |
+|----------|------|-------------|
+| Топ по выручке | `sales.revenue` | `desc` |
+| Хронология | временное измерение | `asc` |
+| Алфавитный список | текстовое измерение | `asc` |
+| Худшие показатели | мера | `asc` |
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Сводные таблицы" icon="table-cells" href="../charts/pivot-table">
+    Сортировка в Pivot Table
+  </Card>
+  <Card title="Столбчатые диаграммы" icon="chart-bar" href="../charts/bar">
+    Сортировка в Bar
+  </Card>
+</CardGroup>
+
+---
+
+← [Выбираемые поля](./selectable-fields) | [Функциональность](./index)

@@ -1,0 +1,573 @@
+---
+title: "Столбчатые диаграммы (Bar)"
+description: "Столбчатые диаграммы для сравнения значений по категориям"
+---
+
+<img src="/assets/img/charts/bar_v2/bar_v2_example.png" width="300" alt="Пример Bar V2 графика" />
+
+Диаграмма с поддержкой стеков, иерархий, выбираемых полей и гибких настроек отображения.
+
+### Поля
+
+<ResponseField name="type" type='"bar_v2"' required>
+  Тип графика
+</ResponseField>
+
+<ResponseField name="direction" type="enum" default="vertical">
+  Ориентация столбцов
+  
+  <Expandable title="Значения">
+    | Значение | Описание |
+    |----------|----------|
+    | `vertical` | Вертикальные столбцы (категории по оси X) |
+    | `horizontal` | Горизонтальные столбцы (категории по оси Y) |
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="main_measure" type="BarMeasure">
+  Основная мера. Используйте либо `main_measure`, либо `selectable_main_measure`.
+  
+  <Expandable title="Структура BarMeasure">
+    <ResponseField name="measure" type="string" required>
+      Имя меры из куба
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Заголовок (отображается в легенде и тултипе)
+    </ResponseField>
+    
+    <ResponseField name="color" type="string">
+      HEX-цвет столбца
+      
+      ```yaml
+      color: "#3B82F6"
+      ```
+    </ResponseField>
+    
+    <ResponseField name="data_point_actions" type="DataPointActionDefinition[]">
+      Действия при клике на столбец
+      
+      <Expandable title="Структура DataPointActionDefinition">
+        <ResponseField name="id" type="string" required>
+          UUID действия
+        </ResponseField>
+        <ResponseField name="key" type="string" required>
+          Ключ: `common:copy_value` | `common:view_raw_data` | `link:open` | `dashboard:drill_through` | `dashboard:another_dashboard_drill_through`
+        </ResponseField>
+        <ResponseField name="title" type="string" required>
+          Текст в меню
+        </ResponseField>
+        <ResponseField name="icon" type="IconReference">
+          Иконка: `{library: "lucide", name: "icon-name", color?: [R,G,B]}`
+        </ResponseField>
+        <ResponseField name="target_page_id" type="string">
+          UUID целевой страницы
+        </ResponseField>
+        <ResponseField name="target_dashboard_id" type="string">
+          UUID целевого дашборда
+        </ResponseField>
+        <ResponseField name="filter_mappings" type="DrillThroughFilterMapping[]">
+          Маппинг фильтров
+          
+          <Expandable title="Структура">
+            ```yaml
+            filter_mappings:
+              - target_filter_id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                sources:
+                  - type: data_point_dimension
+                    member_name: products.category
+            ```
+          </Expandable>
+        </ResponseField>
+        <ResponseField name="url" type="string">
+          URL для link:open
+        </ResponseField>
+        <ResponseField name="open_in" type="enum">
+          `same_tab` | `new_tab`
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  main_measure:
+    measure: sales.revenue
+    title: Выручка
+    color: "#3B82F6"
+  ```
+</ResponseField>
+
+<ResponseField name="selectable_main_measure" type="SelectableMeasureField">
+  Выбираемая основная мера
+  
+  <Expandable title="Структура SelectableMeasureField">
+    <ResponseField name="type" type='"single"' required>
+      Тип выбора (для основной меры — всегда single)
+    </ResponseField>
+    
+    <ResponseField name="hint" type="string">
+      Подсказка для пользователя
+    </ResponseField>
+    
+    <ResponseField name="options" type="BarMeasure[]" required>
+      Варианты мер (структура BarMeasure описана выше)
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  selectable_main_measure:
+    type: single
+    hint: Выберите показатель
+    options:
+      - measure: sales.revenue
+        title: Выручка
+      - measure: sales.quantity
+        title: Количество
+  ```
+</ResponseField>
+
+<ResponseField name="main_dimension" type="BarDimension">
+  Основное измерение (категории). Используйте либо `main_dimension`, либо `selectable_main_dimension`.
+  
+  <Expandable title="Типы BarDimension">
+    ### Простое измерение
+    
+    <ResponseField name="type" type='"dimension"' default="dimension">
+      Тип
+    </ResponseField>
+    
+    <ResponseField name="dimension" type="CubeDimension" required>
+      Измерение из куба
+      
+      <Expandable title="Структура CubeDimension">
+        **Обычное измерение:**
+        ```yaml
+        kind: basic
+        value: products.category
+        ```
+        
+        **Временное измерение:**
+        ```yaml
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: month
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Заголовок
+    </ResponseField>
+    
+    <ResponseField name="colors" type="BarDimensionColors">
+      Цвета для значений измерения
+      
+      <Expandable title="Структура BarDimensionColors">
+        <ResponseField name="palette_name" type="string">
+          Имя цветовой палитры
+        </ResponseField>
+        
+        <ResponseField name="values" type="Dict[string, string]">
+          HEX-цвета для конкретных значений
+        </ResponseField>
+      </Expandable>
+      
+      ```yaml
+      colors:
+        palette_name: custom
+        values:
+          "Электроника": "#3B82F6"
+          "Одежда": "#10B981"
+          "Продукты": "#F59E0B"
+      ```
+    </ResponseField>
+    
+    ---
+    
+    ### Иерархия измерений (drill-down)
+    
+    <ResponseField name="type" type='"dimension_hierarchy"' required>
+      Тип
+    </ResponseField>
+    
+    <ResponseField name="levels" type="BarHierarchyLevel[]" required>
+      Уровни иерархии
+      
+      <Expandable title="Структура BarHierarchyLevel">
+        <ResponseField name="member" type="CubeDimension" required>
+          Измерение уровня
+        </ResponseField>
+        <ResponseField name="title" type="string">
+          Заголовок уровня
+        </ResponseField>
+        <ResponseField name="colors" type="BarDimensionColors">
+          Цвета для уровня
+        </ResponseField>
+      </Expandable>
+      
+      ```yaml
+      levels:
+        - member:
+            kind: basic
+            value: geography.country
+          title: Страна
+        - member:
+            kind: basic
+            value: geography.city
+          title: Город
+      ```
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  main_dimension:
+    dimension:
+      kind: basic
+      value: products.category
+    title: Категория
+  ```
+</ResponseField>
+
+<ResponseField name="selectable_main_dimension" type="SelectableDimensionField">
+  Выбираемое основное измерение
+  
+  <Expandable title="Структура">
+    ```yaml
+    selectable_main_dimension:
+      type: single
+      hint: Выберите разрез
+      options:
+        - dimension:
+            kind: basic
+            value: products.category
+          title: По категориям
+        - dimension:
+            kind: basic
+            value: managers.name
+          title: По менеджерам
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="additional_measures" type="BarMeasure[]">
+  Дополнительные меры (отображаются как дополнительные столбцы). Используйте либо `additional_measures`, либо `selectable_additional_measures`.
+  
+  ```yaml
+  additional_measures:
+    - measure: sales.quantity
+      title: Количество
+      color: "#10B981"
+    - measure: sales.margin
+      title: Маржа
+      color: "#F59E0B"
+  ```
+</ResponseField>
+
+<ResponseField name="selectable_additional_measures" type="SelectableMeasureField">
+  Выбираемые дополнительные меры
+  
+  <Expandable title="Структура">
+    ```yaml
+    selectable_additional_measures:
+      type: multiple
+      hint: Дополнительные показатели
+      options:
+        - measure: sales.quantity
+          title: Количество
+          selected: false
+        - measure: sales.margin
+          title: Маржа
+          selected: true
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="additional_dimension" type="BarDimension">
+  Дополнительное измерение для разбивки (создаёт стековую диаграмму). Используйте либо `additional_dimension`, либо `selectable_additional_dimension`.
+  
+  ```yaml
+  additional_dimension:
+    dimension:
+      kind: basic
+      value: products.brand
+    title: Бренд
+    colors:
+      palette_name: brands
+  ```
+</ResponseField>
+
+<ResponseField name="selectable_additional_dimension" type="SelectableDimensionField">
+  Выбираемое дополнительное измерение
+</ResponseField>
+
+<ResponseField name="options" type="BarV2Options">
+  Настройки отображения
+  
+  <Expandable title="Структура BarV2Options">
+    <ResponseField name="dim_axis" type="DimAxisOptions">
+      Ось измерений (X для вертикальных, Y для горизонтальных)
+      
+      <Expandable title="Структура">
+        <ResponseField name="show_title" type="boolean" default="true">
+          Показать заголовок оси
+        </ResponseField>
+        <ResponseField name="show_labels" type="boolean" default="true">
+          Показать подписи
+        </ResponseField>
+        <ResponseField name="show_grid" type="boolean" default="true">
+          Показать сетку
+        </ResponseField>
+        <ResponseField name="show_zoom" type="boolean" default="true">
+          Показать зум
+        </ResponseField>
+        <ResponseField name="rotate_if_not_fit_one_line" type="boolean" default="false">
+          Поворачивать подписи, если не помещаются
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="value_bar_axis" type="ValueAxisOptions">
+      Ось значений для столбцов
+      
+      <Expandable title="Структура">
+        <ResponseField name="show_title" type="boolean" default="true">
+          Показать заголовок оси
+        </ResponseField>
+        <ResponseField name="show_labels" type="boolean" default="true">
+          Показать подписи
+        </ResponseField>
+        <ResponseField name="show_grid" type="boolean" default="true">
+          Показать сетку
+        </ResponseField>
+        <ResponseField name="show_values" type="boolean" default="true">
+          Показать значения на столбцах
+        </ResponseField>
+        <ResponseField name="values_position" type="enum" default="inside">
+          Позиция значений: `inside` | `outside`
+        </ResponseField>
+        <ResponseField name="hide_overlapping_values" type="boolean" default="true">
+          Скрывать перекрывающиеся значения
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="value_line_axis" type="ValueAxisOptions">
+      Ось значений для линий (если есть)
+    </ResponseField>
+    
+    <ResponseField name="legend" type="LegendOptions">
+      Настройки легенды
+      
+      <Expandable title="Структура">
+        <ResponseField name="show" type="boolean" default="true">
+          Показать легенду
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="stack_dimensions" type="boolean" default="false">
+      Стекировать по дополнительному измерению
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  options:
+    dim_axis:
+      show_labels: true
+      rotate_if_not_fit_one_line: true
+    value_bar_axis:
+      show_values: true
+      values_position: outside
+    legend:
+      show: true
+    stack_dimensions: true
+  ```
+</ResponseField>
+
+<ResponseField name="sorting" type="BarSorting[]">
+  Сортировка
+  
+  <Expandable title="Структура BarSorting">
+    <ResponseField name="member" type="string" required>
+      Имя меры или измерения
+    </ResponseField>
+    <ResponseField name="direction" type="enum" required>
+      Направление: `asc` | `desc`
+    </ResponseField>
+  </Expandable>
+  
+  ```yaml
+  sorting:
+    - member: sales.revenue
+      direction: desc
+  ```
+</ResponseField>
+
+<ResponseField name="show_totals" type="boolean" default="false">
+  Показать общий итог
+</ResponseField>
+
+<ResponseField name="show_main_dim_totals" type="boolean" default="false">
+  Показать итоги по основному измерению
+</ResponseField>
+
+<ResponseField name="compare_period_enabled" type="boolean" default="false">
+  Сравнение периодов
+</ResponseField>
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Простая вертикальная
+type: bar_v2
+direction: vertical
+main_dimension:
+  dimension:
+    kind: basic
+    value: products.category
+  title: Категория
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+  color: "#3B82F6"
+```
+
+```yaml Горизонтальная с сортировкой
+type: bar_v2
+direction: horizontal
+main_dimension:
+  dimension:
+    kind: basic
+    value: managers.name
+  title: Менеджер
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+sorting:
+  - member: sales.revenue
+    direction: desc
+options:
+  value_bar_axis:
+    show_values: true
+    values_position: outside
+```
+
+```yaml Стековая диаграмма
+type: bar_v2
+direction: vertical
+main_dimension:
+  dimension:
+    kind: time
+    value:
+      dimension: sales.created_at
+      granularity: month
+  title: Месяц
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+additional_dimension:
+  dimension:
+    kind: basic
+    value: products.category
+  title: Категория
+  colors:
+    palette_name: categories
+options:
+  stack_dimensions: true
+  legend:
+    show: true
+```
+
+```yaml С иерархией (drill-down)
+type: bar_v2
+direction: vertical
+main_dimension:
+  type: dimension_hierarchy
+  levels:
+    - member:
+        kind: basic
+        value: geography.country
+      title: Страна
+    - member:
+        kind: basic
+        value: geography.region
+      title: Регион
+    - member:
+        kind: basic
+        value: geography.city
+      title: Город
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+  data_point_actions:
+    - id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+      key: "common:copy_value"
+      title: "Копировать значение"
+```
+
+```yaml С выбираемыми полями
+type: bar_v2
+direction: vertical
+
+selectable_main_dimension:
+  type: single
+  hint: Разрез
+  options:
+    - dimension:
+        kind: basic
+        value: products.category
+      title: По категориям
+    - dimension:
+        kind: basic
+        value: managers.name
+      title: По менеджерам
+
+selectable_main_measure:
+  type: single
+  hint: Показатель
+  options:
+    - measure: sales.revenue
+      title: Выручка
+    - measure: sales.quantity
+      title: Количество
+
+selectable_additional_measures:
+  type: multiple
+  hint: Дополнительно
+  options:
+    - measure: sales.margin
+      title: Маржа
+      selected: false
+    - measure: sales.average_check
+      title: Средний чек
+      selected: false
+
+show_totals: true
+```
+
+</CodeGroup>
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Иерархии измерений" icon="sitemap" href="../features/dimension-hierarchy">
+    Drill-down в диаграммах
+  </Card>
+  <Card title="Действия с данными" icon="mouse-pointer-click" href="../features/data-point-actions">
+    Клики и drill-through
+  </Card>
+  <Card title="Выбираемые поля" icon="list-check" href="../features/selectable-fields">
+    Динамический выбор
+  </Card>
+  <Card title="Сортировка" icon="arrow-down-a-z" href="../features/sorting">
+    Настройка порядка
+  </Card>
+</CardGroup>
+
+---
+
+← [Сводные таблицы](./pivot-table) | → [Круговые диаграммы](./pie)

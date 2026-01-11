@@ -1,0 +1,318 @@
+---
+title: "Иерархии измерений"
+description: "Drill-down и группировка строк для навигации по данным"
+---
+
+Иерархии измерений позволяют организовать данные в многоуровневую структуру для навигации от общего к частному.
+
+## Типы иерархий
+
+| Тип | Описание | Загрузка данных |
+|-----|----------|-----------------|
+| `dimension_hierarchy` | Drill-down (раскрытие уровней) | Lazy (по запросу) |
+| `dimension_row_grouping` | Группировка строк | Eager (все сразу) |
+
+---
+
+## Dimension Hierarchy — Drill-down
+
+При клике на значение загружаются данные следующего уровня. Подходит для больших объёмов данных.
+
+### Структура
+
+<ResponseField name="type" type='"dimension_hierarchy"' required>
+  Тип колонки/строки
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Общий заголовок иерархии
+</ResponseField>
+
+<ResponseField name="levels" type="HierarchyLevel[]" required>
+  Уровни иерархии (от верхнего к нижнему)
+  
+  <Expandable title="Структура HierarchyLevel">
+    <ResponseField name="member" type="CubeDimension" required>
+      Измерение уровня
+      
+      <Expandable title="Структура CubeDimension">
+        **Обычное измерение:**
+        ```yaml
+        kind: basic
+        value: geography.country
+        ```
+        
+        **Временное измерение:**
+        ```yaml
+        kind: time
+        value:
+          dimension: sales.created_at
+          granularity: quarter
+        ```
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Заголовок уровня (отображается при раскрытии)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Поддержка в графиках
+
+| График | Где используется |
+|--------|-----------------|
+| Table v2 | `columns` (тип колонки) |
+| Pivot Table v2 | `rows` (тип строки) |
+| Bar v2 | `main_dimension` |
+| Pie | `main_dimension` |
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Таблица с географией
+type: table_v2
+columns:
+  - type: dimension_hierarchy
+    title: География
+    levels:
+      - member:
+          kind: basic
+          value: geography.country
+        title: Страна
+      - member:
+          kind: basic
+          value: geography.region
+        title: Регион
+      - member:
+          kind: basic
+          value: geography.city
+        title: Город
+  - type: measure
+    member: sales.revenue
+    title: Выручка
+```
+
+```yaml Сводная таблица с иерархией
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: quarter
+    title: Квартал
+rows:
+  - type: dimension_hierarchy
+    title: Расположение
+    levels:
+      - member:
+          kind: basic
+          value: stores.region
+        title: Регион
+      - member:
+          kind: basic
+          value: stores.city
+        title: Город
+      - member:
+          kind: basic
+          value: stores.name
+        title: Магазин
+measures:
+  - member: sales.revenue
+    title: Выручка
+```
+
+```yaml Столбчатая диаграмма с drill-down
+type: bar_v2
+main_dimension:
+  type: dimension_hierarchy
+  levels:
+    - member:
+        kind: basic
+        value: products.category
+      title: Категория
+    - member:
+        kind: basic
+        value: products.subcategory
+      title: Подкатегория
+    - member:
+        kind: basic
+        value: products.name
+      title: Товар
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+```
+
+```yaml Круговая диаграмма с иерархией
+type: pie
+pie_type: donut
+main_dimension:
+  type: dimension_hierarchy
+  levels:
+    - member:
+        kind: basic
+        value: geography.region
+      title: Регион
+    - member:
+        kind: basic
+        value: geography.city
+      title: Город
+main_measure:
+  measure: sales.revenue
+  title: Выручка
+```
+
+</CodeGroup>
+
+---
+
+## Dimension Row Grouping — Группировка строк
+
+Все данные загружаются сразу, строки визуально группируются с возможностью сворачивания.
+
+<Info>
+  Используйте `dimension_row_grouping`, когда объём данных невелик и нужна визуальная группировка без дополнительных запросов к серверу.
+</Info>
+
+### Структура
+
+<ResponseField name="type" type='"dimension_row_grouping"' required>
+  Тип колонки/строки
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Заголовок колонки
+</ResponseField>
+
+<ResponseField name="levels" type="HierarchyLevel[]" required>
+  Уровни группировки (структура аналогична `dimension_hierarchy`)
+</ResponseField>
+
+### Поддержка в графиках
+
+| График | Где используется |
+|--------|-----------------|
+| Table v2 | `columns` (тип колонки) |
+| Pivot Table v2 | `rows` (тип строки) |
+
+### Примеры
+
+<CodeGroup>
+
+```yaml Таблица с группировкой
+type: table_v2
+columns:
+  - type: dimension_row_grouping
+    title: Категория / Подкатегория
+    levels:
+      - member:
+          kind: basic
+          value: products.category
+        title: Категория
+      - member:
+          kind: basic
+          value: products.subcategory
+        title: Подкатегория
+  - type: dimension
+    member:
+      kind: basic
+      value: products.name
+    title: Товар
+  - type: measure
+    member: sales.revenue
+    title: Выручка
+  - type: measure
+    member: sales.quantity
+    title: Количество
+include_totals: true
+```
+
+```yaml Сводная таблица с группировкой
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+rows:
+  - type: dimension_row_grouping
+    title: Категория
+    levels:
+      - member:
+          kind: basic
+          value: products.category
+        title: Категория
+      - member:
+          kind: basic
+          value: products.subcategory
+        title: Подкатегория
+measures:
+  - member: sales.revenue
+    title: Выручка
+include_rows_totals: true
+```
+
+</CodeGroup>
+
+---
+
+## Сравнение типов
+
+| Характеристика | dimension_hierarchy | dimension_row_grouping |
+|----------------|--------------------|-----------------------|
+| Загрузка данных | По запросу (lazy) | Сразу (eager) |
+| Производительность | Лучше для больших данных | Лучше для малых данных |
+| Взаимодействие | Клик для раскрытия | Клик для сворачивания/разворачивания |
+| Визуальная группировка | Нет | Да |
+| Поддержка в Bar/Pie | ✅ | ❌ |
+
+---
+
+## Рекомендации
+
+<Steps>
+  <Step title="Оцените объём данных">
+    - Меньше 1000 строк → `dimension_row_grouping`
+    - Больше 1000 строк → `dimension_hierarchy`
+  </Step>
+  
+  <Step title="Определите глубину иерархии">
+    Оптимально 2-4 уровня. Больше 4 уровней усложняет навигацию.
+  </Step>
+  
+  <Step title="Логический порядок">
+    Уровни должны идти от общего к частному: Страна → Регион → Город
+  </Step>
+</Steps>
+
+<Warning>
+  Избегайте глубоких иерархий с `dimension_row_grouping` — это приведёт к загрузке большого объёма данных.
+</Warning>
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Измерения" icon="layer-group" href="./dimensions">
+    Типы измерений
+  </Card>
+  <Card title="Таблицы" icon="table" href="../charts/table">
+    Использование в таблицах
+  </Card>
+  <Card title="Сводные таблицы" icon="table-cells" href="../charts/pivot-table">
+    Использование в сводных таблицах
+  </Card>
+  <Card title="Столбчатые диаграммы" icon="chart-bar" href="../charts/bar">
+    Drill-down в диаграммах
+  </Card>
+</CardGroup>
+
+---
+
+← [Измерения](./dimensions) | → [Действия с данными](./data-point-actions)

@@ -1,0 +1,645 @@
+---
+title: "Условное форматирование"
+description: "Цветовое выделение данных на основе значений"
+---
+
+Условное форматирование позволяет визуально выделять данные на основе их значений.
+
+## Обзор
+
+| Тип | Описание | Применение |
+|-----|----------|------------|
+| `background` | Цвет фона ячейки | Меры, Измерения |
+| `text` | Цвет текста | Меры, Измерения |
+| `icon` | Иконка рядом с значением | Только меры |
+
+### Поддержка в графиках
+
+| График | Меры | Измерения |
+|--------|------|-----------|
+| Table v2 | ✅ | ✅ |
+| Pivot Table v2 | ✅ | ✅ |
+
+---
+
+## Форматирование мер
+
+### Структура
+
+<ResponseField name="type" type="enum" required>
+  Тип форматирования
+  
+  | Значение | Описание |
+  |----------|----------|
+  | `background` | Цвет фона ячейки |
+  | `text` | Цвет текста |
+  | `icon` | Иконка рядом со значением |
+</ResponseField>
+
+<ResponseField name="filling_type" type="enum" required>
+  Способ расчёта цвета
+  
+  | Значение | Описание |
+  |----------|----------|
+  | `palette` | Дискретные условия с конкретными цветами |
+  | `gradient` | Плавный градиент по значению |
+</ResponseField>
+
+<ResponseField name="source_field" type="string">
+  Поле для расчёта, если отличается от текущего. Позволяет форматировать одну меру на основе значений другой.
+</ResponseField>
+
+---
+
+## Background — Цвет фона
+
+### С палитрой (palette)
+
+Набор дискретных правил с условиями и цветами.
+
+<ResponseField name="conditions" type="Condition[]" required>
+  Список условий
+  
+  <Expandable title="Типы условий">
+    ### eq — Точное совпадение
+    
+    <ResponseField name="type" type='"eq"' required>
+      Тип условия
+    </ResponseField>
+    
+    <ResponseField name="value" type="number" required>
+      Значение для сравнения
+    </ResponseField>
+    
+    <ResponseField name="color" type="RGBColor" required>
+      Цвет `[R, G, B]`
+    </ResponseField>
+    
+    ```yaml
+    type: eq
+    value: 0
+    color: [158, 158, 158]  # серый для нуля
+    ```
+    
+    ---
+    
+    ### interval — Диапазон
+    
+    <ResponseField name="type" type='"interval"' required>
+      Тип условия
+    </ResponseField>
+    
+    <ResponseField name="interval" type="Interval" required>
+      Настройки интервала
+      
+      <Expandable title="Структура Interval">
+        <ResponseField name="min" type="IntervalBound">
+          Нижняя граница
+          
+          <ResponseField name="operator" type="enum" required>
+            Оператор: `gt` (>) или `gte` (>=)
+          </ResponseField>
+          <ResponseField name="value" type="number" required>
+            Значение границы
+          </ResponseField>
+        </ResponseField>
+        
+        <ResponseField name="max" type="IntervalBound">
+          Верхняя граница
+          
+          <ResponseField name="operator" type="enum" required>
+            Оператор: `lt` (<) или `lte` (<=)
+          </ResponseField>
+          <ResponseField name="value" type="number" required>
+            Значение границы
+          </ResponseField>
+        </ResponseField>
+        
+        <ResponseField name="color" type="RGBColor" required>
+          Цвет для интервала
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<CodeGroup>
+
+```yaml Базовый пример
+conditional_formatting:
+  type: background
+  filling_type: palette
+  conditions:
+    - type: eq
+      value: 0
+      color: [158, 158, 158]  # серый для нуля
+    
+    - type: interval
+      interval:
+        min:
+          operator: gte
+          value: 100
+        color: [200, 230, 201]  # зелёный для >= 100
+    
+    - type: interval
+      interval:
+        min:
+          operator: gte
+          value: 50
+        max:
+          operator: lt
+          value: 100
+        color: [255, 243, 224]  # оранжевый для 50-99
+    
+    - type: interval
+      interval:
+        max:
+          operator: lt
+          value: 50
+        color: [255, 205, 210]  # красный для < 50
+```
+
+```yaml Маржинальность
+conditional_formatting:
+  type: background
+  filling_type: palette
+  conditions:
+    - type: interval
+      interval:
+        min:
+          operator: gte
+          value: 30
+        color: [200, 230, 201]  # высокая маржа
+    - type: interval
+      interval:
+        min:
+          operator: gte
+          value: 15
+        max:
+          operator: lt
+          value: 30
+        color: [255, 243, 224]  # средняя маржа
+    - type: interval
+      interval:
+        max:
+          operator: lt
+          value: 15
+        color: [255, 205, 210]  # низкая маржа
+```
+
+</CodeGroup>
+
+### С градиентом (gradient)
+
+Плавный переход цвета в зависимости от значения.
+
+<ResponseField name="gradient" type="Gradient" required>
+  Настройки градиента
+  
+  <Expandable title="Структура Gradient">
+    <ResponseField name="type" type="enum" required>
+      Тип градиента
+      
+      | Значение | Описание |
+      |----------|----------|
+      | `two_colors` | Двухцветный градиент |
+      | `three_colors` | Трёхцветный градиент |
+    </ResponseField>
+    
+    <ResponseField name="palette" type="enum" required>
+      Цветовая палитра
+      
+      **Для two_colors:**
+      | Значение | Цвета |
+      |----------|-------|
+      | `white_red` | Белый → Красный |
+      | `white_green` | Белый → Зелёный |
+      | `white_blue` | Белый → Синий |
+      | `white_yellow` | Белый → Жёлтый |
+      | `white_purple` | Белый → Фиолетовый |
+      
+      **Для three_colors:**
+      | Значение | Цвета |
+      |----------|-------|
+      | `red_yellow_green` | Красный → Жёлтый → Зелёный |
+      | `red_white_green` | Красный → Белый → Зелёный |
+      | `green_yellow_red` | Зелёный → Жёлтый → Красный |
+      | `green_white_red` | Зелёный → Белый → Красный |
+    </ResponseField>
+    
+    <ResponseField name="thresholds" type="Thresholds">
+      Пороговые значения (опционально, иначе авто)
+      
+      **Для two_colors:**
+      ```yaml
+      thresholds:
+        min_value: 0
+        max_value: 100
+      ```
+      
+      **Для three_colors:**
+      ```yaml
+      thresholds:
+        min_value: 0
+        middle_value: 100
+        max_value: 200
+      ```
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<CodeGroup>
+
+```yaml Двухцветный градиент
+conditional_formatting:
+  type: background
+  filling_type: gradient
+  gradient:
+    type: two_colors
+    palette: white_green
+    thresholds:
+      min_value: 0
+      max_value: 100
+```
+
+```yaml Трёхцветный градиент
+conditional_formatting:
+  type: background
+  filling_type: gradient
+  gradient:
+    type: three_colors
+    palette: red_white_green
+    thresholds:
+      min_value: 0
+      middle_value: 100
+      max_value: 200
+```
+
+</CodeGroup>
+
+---
+
+## Text — Цвет текста
+
+Аналогично `background`, но меняет цвет текста вместо фона.
+
+```yaml
+conditional_formatting:
+  type: text
+  filling_type: gradient
+  gradient:
+    type: two_colors
+    palette: white_red
+```
+
+---
+
+## Icon — Иконки
+
+Отображает иконку рядом со значением на основе условий.
+
+<ResponseField name="position" type="enum" default="left">
+  Позиция иконки
+  
+  | Значение | Описание |
+  |----------|----------|
+  | `left` | Слева от значения |
+  | `right` | Справа от значения |
+  | `icon_only` | Только иконка, без значения |
+</ResponseField>
+
+<ResponseField name="conditions" type="IconCondition[]" required>
+  Условия с иконками
+  
+  <Expandable title="Структура IconCondition">
+    <ResponseField name="type" type="enum" required>
+      Тип условия: `eq` | `interval`
+    </ResponseField>
+    
+    <ResponseField name="value" type="number">
+      Значение для `eq`
+    </ResponseField>
+    
+    <ResponseField name="interval" type="Interval">
+      Интервал (без color, с icon)
+    </ResponseField>
+    
+    <ResponseField name="icon" type="IconReference" required>
+      Иконка для условия
+      
+      <Expandable title="Структура IconReference">
+        <ResponseField name="library" type="string" required>
+          Библиотека: `lucide`
+        </ResponseField>
+        <ResponseField name="name" type="string" required>
+          Имя иконки
+        </ResponseField>
+        <ResponseField name="color" type="RGBColor">
+          Цвет иконки
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```yaml
+conditional_formatting:
+  type: icon
+  filling_type: palette
+  position: left
+  conditions:
+    - type: interval
+      interval:
+        min:
+          operator: gt
+          value: 0
+        icon:
+          library: lucide
+          name: arrow-up
+          color: [76, 175, 80]
+    
+    - type: eq
+      value: 0
+      icon:
+        library: lucide
+        name: minus
+        color: [158, 158, 158]
+    
+    - type: interval
+      interval:
+        max:
+          operator: lt
+          value: 0
+        icon:
+          library: lucide
+          name: arrow-down
+          color: [244, 67, 54]
+```
+
+---
+
+## Форматирование измерений
+
+Для измерений используется упрощённое форматирование по значениям.
+
+<ResponseField name="type" type="enum" required>
+  Тип: `background` | `text`
+</ResponseField>
+
+<ResponseField name="values" type="Dict[string, RGBColor]" required>
+  Цвета для конкретных значений измерения
+</ResponseField>
+
+```yaml
+conditional_formatting:
+  type: background
+  values:
+    "Новый": [227, 242, 253]       # светло-синий
+    "В работе": [255, 243, 224]   # светло-оранжевый
+    "Выполнен": [200, 230, 201]   # светло-зелёный
+    "Отменён": [255, 205, 210]    # светло-красный
+```
+
+---
+
+## Форматирование в Pivot Table v2
+
+В сводных таблицах есть дополнительная опция отображения в итогах:
+
+<ResponseField name="conditional_formatting" type="MeasureConditionalFormatting" required>
+  Настройки форматирования (вложенный объект)
+</ResponseField>
+
+<ResponseField name="display_in_totals" type="boolean" default="false">
+  Показывать форматирование в итоговых строках
+</ResponseField>
+
+```yaml
+measures:
+  - member: sales.plan_completion
+    title: Выполнение плана %
+    conditional_formatting:
+      conditional_formatting:
+        type: background
+        filling_type: gradient
+        gradient:
+          type: three_colors
+          palette: red_yellow_green
+      display_in_totals: true
+```
+
+---
+
+## Полные примеры
+
+<CodeGroup>
+
+```yaml Таблица с форматированием мер
+type: table_v2
+columns:
+  - type: dimension
+    member:
+      kind: basic
+      value: products.name
+    title: Товар
+  
+  - type: measure
+    member: sales.revenue
+    title: Выручка
+    conditional_formatting:
+      type: background
+      filling_type: gradient
+      gradient:
+        type: two_colors
+        palette: white_green
+  
+  - type: measure
+    member: sales.margin_percent
+    title: Маржа %
+    conditional_formatting:
+      type: background
+      filling_type: palette
+      conditions:
+        - type: interval
+          interval:
+            min:
+              operator: gte
+              value: 30
+            color: [200, 230, 201]
+        - type: interval
+          interval:
+            min:
+              operator: gte
+              value: 15
+            max:
+              operator: lt
+              value: 30
+            color: [255, 243, 224]
+        - type: interval
+          interval:
+            max:
+              operator: lt
+              value: 15
+            color: [255, 205, 210]
+  
+  - type: measure
+    member: sales.growth
+    title: Рост
+    conditional_formatting:
+      type: icon
+      filling_type: palette
+      position: left
+      conditions:
+        - type: interval
+          interval:
+            min:
+              operator: gt
+              value: 0
+            icon:
+              library: lucide
+              name: trending-up
+              color: [76, 175, 80]
+        - type: eq
+          value: 0
+          icon:
+            library: lucide
+            name: minus
+            color: [158, 158, 158]
+        - type: interval
+          interval:
+            max:
+              operator: lt
+              value: 0
+            icon:
+              library: lucide
+              name: trending-down
+              color: [244, 67, 54]
+```
+
+```yaml Таблица с форматированием измерений
+type: table_v2
+columns:
+  - type: dimension
+    member:
+      kind: basic
+      value: orders.status
+    title: Статус
+    conditional_formatting:
+      type: background
+      values:
+        "Новый": [227, 242, 253]
+        "В работе": [255, 243, 224]
+        "Выполнен": [200, 230, 201]
+        "Отменён": [255, 205, 210]
+  
+  - type: measure
+    member: orders.count
+    title: Количество
+```
+
+```yaml Сводная таблица с форматированием
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+rows:
+  - member:
+      kind: basic
+      value: managers.name
+    title: Менеджер
+    conditional_formatting:
+      type: text
+      values:
+        "Иванов": [33, 150, 243]
+        "Петров": [76, 175, 80]
+measures:
+  - member: sales.plan_percent
+    title: План %
+    conditional_formatting:
+      conditional_formatting:
+        type: background
+        filling_type: gradient
+        gradient:
+          type: three_colors
+          palette: red_white_green
+          thresholds:
+            min_value: 0
+            middle_value: 100
+            max_value: 150
+      display_in_totals: true
+```
+
+</CodeGroup>
+
+---
+
+## Рекомендации
+
+<Steps>
+  <Step title="Не перегружайте">
+    2-3 отформатированных колонки достаточно
+  </Step>
+  
+  <Step title="Контрастные цвета">
+    Значения должны быть читаемы на фоне
+  </Step>
+  
+  <Step title="Согласуйте направление">
+    Зелёный = хорошо, Красный = плохо (обычно)
+  </Step>
+  
+  <Step title="Задавайте пороги явно">
+    Используйте `thresholds` для точного контроля
+  </Step>
+  
+  <Step title="Тестируйте на реальных данных">
+    Проверьте отображение на крайних значениях
+  </Step>
+</Steps>
+
+---
+
+## Справочник цветов
+
+### Для фона
+
+| Оттенок | RGB | Использование |
+|---------|-----|---------------|
+| Светло-зелёный | `[200, 230, 201]` | Позитивный |
+| Светло-красный | `[255, 205, 210]` | Негативный |
+| Светло-жёлтый | `[255, 243, 224]` | Предупреждение |
+| Светло-синий | `[227, 242, 253]` | Информационный |
+| Серый | `[158, 158, 158]` | Нейтральный |
+
+### Для иконок
+
+| Цвет | RGB | Использование |
+|------|-----|---------------|
+| Зелёный | `[76, 175, 80]` | Рост, успех |
+| Красный | `[244, 67, 54]` | Падение, ошибка |
+| Синий | `[33, 150, 243]` | Информация |
+| Серый | `[158, 158, 158]` | Нейтральный |
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Базовые типы" icon="book" href="../reference/types">
+    RGBColor, IconReference
+  </Card>
+  <Card title="Таблицы" icon="table" href="../charts/table">
+    Форматирование в таблицах
+  </Card>
+  <Card title="Сводные таблицы" icon="table-cells" href="../charts/pivot-table">
+    Форматирование в сводных таблицах
+  </Card>
+</CardGroup>
+
+---
+
+← [Действия с данными](./data-point-actions) | → [Выбираемые поля](./selectable-fields)

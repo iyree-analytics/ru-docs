@@ -1,0 +1,222 @@
+---
+title: "Измерения (Dimensions)"
+description: "Типы измерений для группировки данных"
+---
+
+Измерения определяют, как данные группируются и агрегируются в графиках.
+
+## Типы измерений
+
+| Тип | `kind` | Описание |
+|-----|--------|----------|
+| Обычное | `basic` | Категориальное измерение |
+| Временное | `time` | Временное измерение с гранулярностью |
+
+---
+
+## BasicDimension — Обычное измерение
+
+Категориальное измерение для группировки по дискретным значениям.
+
+### Структура
+
+<ResponseField name="kind" type='"basic"' required>
+  Тип измерения
+</ResponseField>
+
+<ResponseField name="value" type="string" required>
+  Полное имя измерения в формате `cube_name.dimension_name`
+</ResponseField>
+
+### Пример
+
+```yaml
+kind: basic
+value: products.category
+```
+
+### Применение
+
+```yaml
+# В таблице
+columns:
+  - type: dimension
+    member:
+      kind: basic
+      value: products.category
+    title: Категория
+
+# В столбчатой диаграмме
+main_dimension:
+  dimension:
+    kind: basic
+    value: managers.name
+  title: Менеджер
+```
+
+---
+
+## TimeDimension — Временное измерение
+
+Временное измерение с настраиваемой гранулярностью для анализа по периодам.
+
+### Структура
+
+<ResponseField name="kind" type='"time"' required>
+  Тип измерения
+</ResponseField>
+
+<ResponseField name="value" type="TimeDimensionValue" required>
+  Настройки временного измерения
+  
+  <Expandable title="Структура TimeDimensionValue">
+    <ResponseField name="dimension" type="string" required>
+      Полное имя временного измерения из куба
+    </ResponseField>
+    
+    <ResponseField name="granularity" type="enum" required>
+      Гранулярность агрегации
+      
+      | Значение | Описание | Пример |
+      |----------|----------|--------|
+      | `second` | Секунды | 2024-01-15 10:30:45 |
+      | `minute` | Минуты | 2024-01-15 10:30 |
+      | `hour` | Часы | 2024-01-15 10:00 |
+      | `day` | Дни | 2024-01-15 |
+      | `week` | Недели | 2024-W03 |
+      | `month` | Месяцы | 2024-01 |
+      | `quarter` | Кварталы | 2024-Q1 |
+      | `year` | Годы | 2024 |
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Пример
+
+```yaml
+kind: time
+value:
+  dimension: sales.created_at
+  granularity: month
+```
+
+### Применение
+
+```yaml
+# В сводной таблице — колонки по месяцам
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+
+# В столбчатой диаграмме — тренд по дням
+main_dimension:
+  dimension:
+    kind: time
+    value:
+      dimension: orders.created_at
+      granularity: day
+  title: Дата
+
+# Для тренд-линии в плитке
+trendline:
+  time_dimension:
+    dimension: sales.created_at
+    granularity: day
+```
+
+---
+
+## Выбор гранулярности
+
+<Info>
+  Выбирайте гранулярность в зависимости от объёма данных и требуемой детализации.
+</Info>
+
+| Период данных | Рекомендуемая гранулярность |
+|---------------|----------------------------|
+| 1-7 дней | `hour` или `day` |
+| 1-4 недели | `day` |
+| 1-6 месяцев | `day` или `week` |
+| 6-12 месяцев | `week` или `month` |
+| 1-3 года | `month` или `quarter` |
+| 3+ года | `quarter` или `year` |
+
+---
+
+## Примеры использования
+
+<CodeGroup>
+
+```yaml Таблица с категориями
+type: table_v2
+columns:
+  - type: dimension
+    member:
+      kind: basic
+      value: products.category
+    title: Категория
+  - type: dimension
+    member:
+      kind: basic
+      value: products.subcategory
+    title: Подкатегория
+  - type: measure
+    member: sales.revenue
+    title: Выручка
+```
+
+```yaml Сводная таблица по месяцам
+type: pivot_table_v2
+columns:
+  - member:
+      kind: time
+      value:
+        dimension: sales.created_at
+        granularity: month
+    title: Месяц
+rows:
+  - member:
+      kind: basic
+      value: products.category
+    title: Категория
+measures:
+  - member: sales.revenue
+    title: Выручка
+```
+
+```yaml Тренд по неделям
+type: bar_v2
+main_dimension:
+  dimension:
+    kind: time
+    value:
+      dimension: orders.created_at
+      granularity: week
+  title: Неделя
+main_measure:
+  measure: orders.count
+  title: Заказы
+```
+
+</CodeGroup>
+
+---
+
+## См. также
+
+<CardGroup cols={2}>
+  <Card title="Иерархии измерений" icon="sitemap" href="./dimension-hierarchy">
+    Drill-down и группировка
+  </Card>
+  <Card title="Базовые типы" icon="book" href="../reference/types">
+    CubeDimension и другие типы
+  </Card>
+</CardGroup>
+
+---
+
+← [Функциональность](./index) | → [Иерархии измерений](./dimension-hierarchy)
