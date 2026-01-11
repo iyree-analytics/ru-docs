@@ -29,32 +29,51 @@
     }
   },
   "navigation": {
-    "dropdowns": [
+    "groups": [
       {
-        "dropdown": "Documentation",
-        "icon": "book",
-        "description": "How to use the Example Co. product",
-        "groups": [
+        "group": "Начало работы",
+        "icon": "rocket",
+        "pages": [
+          "index",
+          "iyree-motto",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Готовая аналитика для ресторанов",
+        "icon": "chef-hat",
+        "pages": [
+          "domain/restaurants/intro",
           {
-            "group": "Getting started",
+            "group": "Дашборды",
             "pages": [
-              "index"
+              "domain/restaurants/dashboards/index",
+              "domain/restaurants/dashboards/sales",
+              "domain/restaurants/dashboards/abc",
+              "domain/restaurants/dashboards/waiters-efficiency",
+              "domain/restaurants/dashboards/writeoffs"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Бизнес показатели",
             "pages": [
-              "demo"
+              "domain/restaurants/metrics/index"
             ]
           }
         ]
       },
       {
-        "dropdown": "Changelog",
-        "icon": "history",
-        "description": "Updates and changes",
+        "group": "BI функционал",
+        "icon": "layout-dashboard",
         "pages": [
-          "demo"
+          "bi/intro",
+          {
+            "group": "Графики",
+            "pages": [
+              "bi/charts/index",
+              "bi/charts/tile"
+            ]
+          }
         ]
       }
     ]
