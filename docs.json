@@ -99,6 +99,12 @@
                 ]
               }
             ]
+          },
+          {
+            "group": "Наборы данных",
+            "pages": [
+              "bi/cubes/measure-filters"
+            ]
           }
         ]
       }
