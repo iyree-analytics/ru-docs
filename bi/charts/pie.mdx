@@ -3,7 +3,11 @@ title: "Круговые диаграммы (Pie)"
 description: "Круговые и кольцевые диаграммы"
 ---
 
-<img src="/assets/img/charts/pie/pie_example.png" width="600" alt="Пример Pie графика" />
+<img
+  src="/assets/img/charts/pie/pie_example.png"
+  width="600"
+  alt="Пример Pie графика"
+/>
 
 Поддерживает как круговой (pie), так и кольцевой (donut) вид, а также иерархии с drill-down.
 
@@ -13,32 +17,30 @@ description: "Круговые и кольцевые диаграммы"
   Тип графика
 </ResponseField>
 
-<ResponseField name="pie_type" type="enum" default="pie">
+<ResponseField name="display_type" type="enum" default="pie">
   Вид диаграммы
-  
+
   <Expandable title="Значения">
-    | Значение | Описание |
-    |----------|----------|
-    | `pie` | Круговая диаграмма (заполненная) |
-    | `donut` | Кольцевая диаграмма (с отверстием) |
+    | Значение | Описание                           |
+    | -------- | ---------------------------------- |
+    | `pie`    | Круговая диаграмма (заполненная)   |
+    | `donut`  | Кольцевая диаграмма (с отверстием) |
   </Expandable>
 </ResponseField>
 
-<ResponseField name="main_measure" type="PieMeasure">
-  Основная мера. Используйте либо `main_measure`, либо `selectable_main_measure`.
-  
+<ResponseField name="measure" type="PieMeasure">
+  Основная мера. Используйте либо `measure`, либо `selectable_measure`.
+
   <Expandable title="Структура PieMeasure">
     <ResponseField name="measure" type="string" required>
       Имя меры из куба
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок
     </ResponseField>
-    
     <ResponseField name="data_point_actions" type="DataPointActionDefinition[]">
       Действия при клике на сектор
-      
+
       <Expandable title="Структура DataPointActionDefinition">
         <ResponseField name="id" type="string" required>
           UUID действия
@@ -52,11 +54,26 @@ description: "Круговые и кольцевые диаграммы"
         <ResponseField name="icon" type="IconReference">
           Иконка
         </ResponseField>
+        <ResponseField name="placement" type="DataPointActionPlacement">
+          Настройки размещения в меню
+
+          <Expandable title="Структура DataPointActionPlacement">
+            <ResponseField name="menu_path" type="string[]">
+              Путь в подменю, например `["Team", "More..."]`
+            </ResponseField>
+            <ResponseField name="group" type="DataPointActionPlacementGroup">
+              Группа действия (разделители между группами)
+            </ResponseField>
+            <ResponseField name="order" type="int">
+              Порядок в группе/подменю
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
         <ResponseField name="target_page_id" type="string">
-          UUID целевой страницы
+          UUID целевой страницы (для drill_through)
         </ResponseField>
         <ResponseField name="target_dashboard_id" type="string">
-          UUID целевого дашборда
+          UUID целевого дашборда (для another_dashboard_drill_through)
         </ResponseField>
         <ResponseField name="filter_mappings" type="DrillThroughFilterMapping[]">
           Маппинг фильтров
@@ -65,25 +82,27 @@ description: "Круговые и кольцевые диаграммы"
           URL для link:open
         </ResponseField>
         <ResponseField name="open_in" type="enum">
-          `same_tab` | `new_tab`
+          `same_tab` | `new_tab` (для link:open)
+        </ResponseField>
+        <ResponseField name="open_in_new_tab" type="boolean">
+          Открыть в новой вкладке (для another_dashboard_drill_through)
         </ResponseField>
       </Expandable>
     </ResponseField>
   </Expandable>
-  
   ```yaml
-  main_measure:
+  measure:
     measure: sales.revenue
     title: Выручка
   ```
 </ResponseField>
 
-<ResponseField name="selectable_main_measure" type="SelectableMeasureField">
+<ResponseField name="selectable_measure" type="SingleSelectableField[PieMeasure]">
   Выбираемая основная мера
-  
+
   <Expandable title="Структура">
     ```yaml
-    selectable_main_measure:
+    selectable_measure:
       type: single
       hint: Выберите показатель
       options:
@@ -95,27 +114,28 @@ description: "Круговые и кольцевые диаграммы"
   </Expandable>
 </ResponseField>
 
-<ResponseField name="main_dimension" type="PieDimension">
-  Основное измерение (сегменты). Используйте либо `main_dimension`, либо `selectable_main_dimension`.
-  
+<ResponseField name="dimension" type="PieDimension">
+  Основное измерение (сегменты). Используйте либо `dimension`, либо `selectable_dimension`.
+
   <Expandable title="Типы PieDimension">
-    ### Простое измерение
-    
+    ### Простое измерение (PieBasicDimension)
+
     <ResponseField name="type" type='"dimension"' default="dimension">
       Тип
     </ResponseField>
-    
     <ResponseField name="dimension" type="CubeDimension" required>
       Измерение из куба
-      
+
       <Expandable title="Структура CubeDimension">
         **Обычное измерение:**
+
         ```yaml
         kind: basic
         value: products.category
         ```
-        
+
         **Временное измерение:**
+
         ```yaml
         kind: time
         value:
@@ -124,65 +144,33 @@ description: "Круговые и кольцевые диаграммы"
         ```
       </Expandable>
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок
     </ResponseField>
-    
-    <ResponseField name="colors" type="PieDimensionColors">
-      Цвета для значений
-      
-      <Expandable title="Структура PieDimensionColors">
-        <ResponseField name="palette_name" type="string">
-          Имя цветовой палитры
-        </ResponseField>
-        
-        <ResponseField name="values" type="Dict[string, string]">
-          HEX-цвета для конкретных значений
-        </ResponseField>
-      </Expandable>
-      
-      ```yaml
-      colors:
-        palette_name: custom
-        values:
-          "Электроника": "#3B82F6"
-          "Одежда": "#10B981"
-          "Продукты": "#F59E0B"
-      ```
-    </ResponseField>
-    
     ---
-    
+
     ### Иерархия измерений (drill-down)
-    
+
     <ResponseField name="type" type='"dimension_hierarchy"' required>
       Тип
     </ResponseField>
-    
-    <ResponseField name="levels" type="PieHierarchyLevel[]" required>
+    <ResponseField name="levels" type="Pie2DimensionHierarchyLevel[]" required>
       Уровни иерархии
-      
-      <Expandable title="Структура PieHierarchyLevel">
+
+      <Expandable title="Структура Pie2DimensionHierarchyLevel">
         <ResponseField name="member" type="CubeDimension" required>
           Измерение уровня
         </ResponseField>
         <ResponseField name="title" type="string">
           Заголовок уровня
         </ResponseField>
-        <ResponseField name="colors" type="PieDimensionColors">
-          Цвета для уровня
-        </ResponseField>
       </Expandable>
-      
       ```yaml
       levels:
         - member:
             kind: basic
             value: geography.region
           title: Регион
-          colors:
-            palette_name: regions
         - member:
             kind: basic
             value: geography.city
@@ -190,9 +178,8 @@ description: "Круговые и кольцевые диаграммы"
       ```
     </ResponseField>
   </Expandable>
-  
   ```yaml
-  main_dimension:
+  dimension:
     dimension:
       kind: basic
       value: products.category
@@ -200,12 +187,12 @@ description: "Круговые и кольцевые диаграммы"
   ```
 </ResponseField>
 
-<ResponseField name="selectable_main_dimension" type="SelectableDimensionField">
-  Выбираемое основное измерение
-  
+<ResponseField name="selectable_dimension" type="SingleSelectableField[PieBasicDimension]">
+  Выбираемое основное измерение (только простые измерения, не иерархии)
+
   <Expandable title="Структура">
     ```yaml
-    selectable_main_dimension:
+    selectable_dimension:
       type: single
       hint: Выберите разрез
       options:
@@ -221,65 +208,89 @@ description: "Круговые и кольцевые диаграммы"
   </Expandable>
 </ResponseField>
 
-<ResponseField name="options" type="PieOptions">
-  Настройки отображения
-  
-  <Expandable title="Структура PieOptions">
-    <ResponseField name="label" type="PieLabelOptions">
-      Настройки меток на секторах
-      
-      <Expandable title="Структура PieLabelOptions">
-        <ResponseField name="show" type="boolean" default="true">
-          Показать метки
-        </ResponseField>
-        
-        <ResponseField name="show_dimension_value" type="boolean" default="true">
-          Показать значение измерения (название категории)
-        </ResponseField>
-        
-        <ResponseField name="show_measure_value" type="boolean" default="true">
-          Показать значение меры
-        </ResponseField>
-        
-        <ResponseField name="show_percentage" type="boolean" default="true">
-          Показать процент от общего
-        </ResponseField>
-        
-        <ResponseField name="position" type="enum" default="outside">
-          Позиция меток: `inside` | `outside`
-        </ResponseField>
-      </Expandable>
-      
-      ```yaml
-      label:
-        show: true
-        show_dimension_value: true
-        show_measure_value: true
-        show_percentage: true
-        position: outside
-      ```
+<ResponseField name="colors" type="PieColorOptions">
+  Настройки цветов
+
+  <Expandable title="Структура PieColorOptions">
+    <ResponseField name="palette_name" type="string" required>
+      Имя цветовой палитры
     </ResponseField>
-    
-    <ResponseField name="legend" type="PieLegendOptions">
-      Настройки легенды
-      
-      <Expandable title="Структура PieLegendOptions">
-        <ResponseField name="show" type="boolean" default="true">
-          Показать легенду
-        </ResponseField>
-        
-        <ResponseField name="position" type="enum" default="right">
-          Позиция: `top` | `bottom` | `left` | `right`
-        </ResponseField>
-      </Expandable>
-      
-      ```yaml
-      legend:
-        show: true
-        position: right
-      ```
+    <ResponseField name="values" type="Dict[string, string]">
+      HEX-цвета для конкретных значений измерения
     </ResponseField>
   </Expandable>
+  ```yaml
+  colors:
+    palette_name: custom
+    values:
+      "Электроника": "#3B82F6"
+      "Одежда": "#10B981"
+      "Продукты": "#F59E0B"
+  ```
+</ResponseField>
+
+<ResponseField name="label" type="PieLabelOptions">
+  Настройки меток на секторах
+
+  <Expandable title="Структура PieLabelOptions">
+    <ResponseField name="show" type="boolean" required>
+      Показать метки
+    </ResponseField>
+    <ResponseField name="position" type="enum" required>
+      Позиция меток: `inside` | `outside`
+    </ResponseField>
+    <ResponseField name="show_values" type="boolean">
+      Показать значения меры
+    </ResponseField>
+    <ResponseField name="show_percentages" type="boolean">
+      Показать процент от общего
+    </ResponseField>
+    <ResponseField name="show_dimension_values" type="boolean">
+      Показать значение измерения (название категории)
+    </ResponseField>
+    <ResponseField name="percentage_threshold" type="float">
+      Минимальный порог процента для отображения метки
+    </ResponseField>
+  </Expandable>
+  ```yaml
+  label:
+    show: true
+    position: outside
+    show_values: true
+    show_percentages: true
+    show_dimension_values: true
+    percentage_threshold: 5.0
+  ```
+</ResponseField>
+
+<ResponseField name="legend" type="PieLegendOptions">
+  Настройки легенды
+
+  <Expandable title="Структура PieLegendOptions">
+    <ResponseField name="show" type="boolean" required>
+      Показать легенду
+    </ResponseField>
+    <ResponseField name="type" type="enum" required>
+      Тип легенды: `compact` | `detailed`
+    </ResponseField>
+    <ResponseField name="truncate_item_chars" type="int">
+      Максимальное количество символов для обрезки названий элементов
+    </ResponseField>
+  </Expandable>
+  ```yaml
+  legend:
+    show: true
+    type: detailed
+    truncate_item_chars: 20
+  ```
+</ResponseField>
+
+<ResponseField name="sorting" type="PieSorting">
+  Настройки сортировки секторов
+</ResponseField>
+
+<ResponseField name="show_totals" type="boolean" default="false">
+  Показать итоговое значение
 </ResponseField>
 
 <ResponseField name="compare_period_enabled" type="boolean" default="false">
@@ -292,49 +303,51 @@ description: "Круговые и кольцевые диаграммы"
 
 ```yaml Простая круговая
 type: pie
-pie_type: pie
-main_dimension:
+display_type: pie
+dimension:
   dimension:
     kind: basic
     value: products.category
   title: Категория
-main_measure:
+measure:
   measure: sales.revenue
   title: Выручка
 ```
 
-```yaml Кольцевая (donut)
+
+```yaml Кольцевая (donut) с цветами
 type: pie
-pie_type: donut
-main_dimension:
+display_type: donut
+dimension:
   dimension:
     kind: basic
     value: products.category
   title: Категория
-  colors:
-    palette_name: categories
-    values:
-      "Электроника": "#3B82F6"
-      "Одежда": "#10B981"
-      "Продукты": "#F59E0B"
-      "Прочее": "#9CA3AF"
-main_measure:
+measure:
   measure: sales.revenue
   title: Выручка
-options:
-  label:
-    show: true
-    show_percentage: true
-    position: outside
-  legend:
-    show: true
-    position: right
+colors:
+  palette_name: categories
+  values:
+    "Электроника": "#3B82F6"
+    "Одежда": "#10B981"
+    "Продукты": "#F59E0B"
+    "Прочее": "#9CA3AF"
+label:
+  show: true
+  position: outside
+  show_percentages: true
+  show_dimension_values: true
+legend:
+  show: true
+  type: detailed
 ```
+
 
 ```yaml С иерархией (drill-down)
 type: pie
-pie_type: pie
-main_dimension:
+display_type: pie
+dimension:
   type: dimension_hierarchy
   levels:
     - member:
@@ -349,7 +362,7 @@ main_dimension:
         kind: basic
         value: stores.name
       title: Магазин
-main_measure:
+measure:
   measure: sales.revenue
   title: Выручка
   data_point_actions:
@@ -358,11 +371,12 @@ main_measure:
       title: "Исходные данные"
 ```
 
+
 ```yaml С выбираемыми полями
 type: pie
-pie_type: donut
+display_type: donut
 
-selectable_main_dimension:
+selectable_dimension:
   type: single
   hint: Разрез
   options:
@@ -379,7 +393,7 @@ selectable_main_dimension:
         value: managers.name
       title: По менеджерам
 
-selectable_main_measure:
+selectable_measure:
   type: single
   hint: Показатель
   options:
@@ -390,21 +404,21 @@ selectable_main_measure:
     - measure: orders.count
       title: Заказы
 
-options:
-  legend:
-    show: true
-    position: bottom
+legend:
+  show: true
+  type: compact
 ```
+
 
 ```yaml С действиями (drill-through)
 type: pie
-pie_type: pie
-main_dimension:
+display_type: pie
+dimension:
   dimension:
     kind: basic
     value: products.category
   title: Категория
-main_measure:
+measure:
   measure: sales.revenue
   title: Выручка
   data_point_actions:
@@ -417,6 +431,31 @@ main_measure:
           sources:
             - type: data_point_dimension
               member_name: products.category
+```
+
+
+```yaml С итогами и сортировкой
+type: pie
+display_type: donut
+dimension:
+  dimension:
+    kind: basic
+    value: products.category
+  title: Категория
+measure:
+  measure: sales.revenue
+  title: Выручка
+show_totals: true
+label:
+  show: true
+  position: inside
+  show_values: true
+  show_percentages: false
+  percentage_threshold: 3.0
+legend:
+  show: true
+  type: detailed
+  truncate_item_chars: 15
 ```
 
 </CodeGroup>
