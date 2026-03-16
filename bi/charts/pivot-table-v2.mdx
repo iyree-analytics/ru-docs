@@ -13,23 +13,24 @@ description: "Сводные таблицы для многомерного ан
 
 <ResponseField name="columns" type="PivotTableColumn[]">
   Измерения в колонках таблицы. Используйте либо `columns`, либо `selectable_columns`.
-  
+
   <Expandable title="Структура PivotTableColumn">
     <ResponseField name="type" type="enum" default="dimension">
       Тип: `dimension`
     </ResponseField>
-    
     <ResponseField name="member" type="CubeDimension" required>
       Измерение
-      
+
       <Expandable title="Структура CubeDimension">
         **Обычное измерение:**
+
         ```yaml
         kind: basic
         value: products.category
         ```
-        
+
         **Временное измерение:**
+
         ```yaml
         kind: time
         value:
@@ -38,12 +39,10 @@ description: "Сводные таблицы для многомерного ан
         ```
       </Expandable>
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок колонки
     </ResponseField>
   </Expandable>
-  
   ```yaml
   columns:
     - member:
@@ -57,19 +56,17 @@ description: "Сводные таблицы для многомерного ан
 
 <ResponseField name="selectable_columns" type="SelectableField">
   Выбираемые измерения для колонок (вместо `columns`)
-  
+
   <Expandable title="Структура SelectableField">
     <ResponseField name="type" type="enum" required>
       Тип выбора: `single` | `multiple`
     </ResponseField>
-    
     <ResponseField name="hint" type="string">
       Подсказка для пользователя
     </ResponseField>
-    
     <ResponseField name="options" type="SelectableOption[]" required>
       Варианты для выбора
-      
+
       <Expandable title="Структура SelectableOption">
         <ResponseField name="member" type="CubeDimension" required>
           Измерение
@@ -83,7 +80,6 @@ description: "Сводные таблицы для многомерного ан
       </Expandable>
     </ResponseField>
   </Expandable>
-  
   ```yaml
   selectable_columns:
     type: single
@@ -106,29 +102,25 @@ description: "Сводные таблицы для многомерного ан
 
 <ResponseField name="rows" type="PivotTableRow[]">
   Измерения в строках таблицы. Используйте либо `rows`, либо `selectable_rows`.
-  
+
   <Expandable title="Типы строк">
     ### dimension — Простое измерение
-    
+
     <ResponseField name="type" type='"dimension"' default="dimension">
       Тип строки
     </ResponseField>
-    
     <ResponseField name="member" type="CubeDimension" required>
       Измерение
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок
     </ResponseField>
-    
     <ResponseField name="column_width" type="number">
       Ширина колонки
     </ResponseField>
-    
     <ResponseField name="conditional_formatting" type="DimensionConditionalFormatting">
       Форматирование по значениям
-      
+
       ```yaml
       conditional_formatting:
         type: text
@@ -137,22 +129,19 @@ description: "Сводные таблицы для многомерного ан
           "Петров": [76, 175, 80]
       ```
     </ResponseField>
-    
     ---
-    
+
     ### dimension_hierarchy — Иерархия с drill-down
-    
+
     <ResponseField name="type" type='"dimension_hierarchy"' required>
       Тип строки
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Общий заголовок
     </ResponseField>
-    
     <ResponseField name="levels" type="HierarchyLevel[]" required>
       Уровни иерархии
-      
+
       ```yaml
       levels:
         - member:
@@ -169,19 +158,16 @@ description: "Сводные таблицы для многомерного ан
           title: Город
       ```
     </ResponseField>
-    
     ---
-    
+
     ### dimension_row_grouping — Группировка строк
-    
+
     <ResponseField name="type" type='"dimension_row_grouping"' required>
       Тип строки
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок
     </ResponseField>
-    
     <ResponseField name="levels" type="HierarchyLevel[]" required>
       Уровни группировки
     </ResponseField>
@@ -194,31 +180,27 @@ description: "Сводные таблицы для многомерного ан
 
 <ResponseField name="measures" type="PivotTableMeasure[]">
   Меры для отображения. Используйте либо `measures`, либо `selectable_measures`.
-  
+
   <Expandable title="Структура PivotTableMeasure">
     <ResponseField name="type" type='"measure"' default="measure">
       Тип поля
     </ResponseField>
-    
     <ResponseField name="member" type="string" required>
       Имя меры из куба
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок
     </ResponseField>
-    
     <ResponseField name="column_width" type="number">
       Ширина колонки (em)
     </ResponseField>
-    
     <ResponseField name="conditional_formatting" type="PivotTableMeasureConditionalFormatting">
       Условное форматирование
-      
+
       <Expandable title="Структура">
         <ResponseField name="conditional_formatting" type="MeasureConditionalFormatting" required>
           Настройки форматирования (вложенный объект)
-          
+
           ```yaml
           type: background
           filling_type: gradient
@@ -231,12 +213,10 @@ description: "Сводные таблицы для многомерного ан
               max_value: 150
           ```
         </ResponseField>
-        
         <ResponseField name="display_in_totals" type="boolean" default="false">
           Показывать форматирование в итоговых строках
         </ResponseField>
       </Expandable>
-      
       ```yaml
       conditional_formatting:
         conditional_formatting:
@@ -248,28 +228,23 @@ description: "Сводные таблицы для многомерного ан
         display_in_totals: true
       ```
     </ResponseField>
-    
     <ResponseField name="linear_indicator" type="PivotTableMeasureLinearIndicator">
       Линейный индикатор
-      
+
       <Expandable title="Структура">
         <ResponseField name="main_color" type="RGBColor" required>
           Основной цвет `[R, G, B]`
         </ResponseField>
-        
         <ResponseField name="negative_color" type="RGBColor">
           Цвет для отрицательных значений
         </ResponseField>
-        
         <ResponseField name="display_in_totals" type="boolean" default="false">
           Показывать в итогах
         </ResponseField>
-        
         <ResponseField name="scope" type="enum" default="column">
           Область расчёта: `column` | `table`
         </ResponseField>
       </Expandable>
-      
       ```yaml
       linear_indicator:
         main_color: [66, 133, 244]
@@ -278,10 +253,9 @@ description: "Сводные таблицы для многомерного ан
         scope: column
       ```
     </ResponseField>
-    
     <ResponseField name="data_point_actions" type="DataPointActionDefinition[]">
-      Действия при клике на ячейку
-      
+      Действия при клике на ячейку.
+
       <Expandable title="Структура DataPointActionDefinition">
         <ResponseField name="id" type="string" required>
           UUID действия
@@ -301,7 +275,6 @@ description: "Сводные таблицы для многомерного ан
       </Expandable>
     </ResponseField>
   </Expandable>
-  
   ```yaml
   measures:
     - member: sales.revenue
@@ -313,19 +286,17 @@ description: "Сводные таблицы для многомерного ан
 
 <ResponseField name="selectable_measures" type="SelectableMeasureField">
   Выбираемые меры
-  
+
   <Expandable title="Структура SelectableMeasureField">
     <ResponseField name="type" type="enum" required>
       Тип: `single` | `multiple`
     </ResponseField>
-    
     <ResponseField name="hint" type="string">
       Подсказка
     </ResponseField>
-    
     <ResponseField name="options" type="SelectableMeasureOption[]" required>
       Варианты
-      
+
       <Expandable title="Структура опции">
         <ResponseField name="member" type="string" required>
           Имя меры
@@ -339,7 +310,6 @@ description: "Сводные таблицы для многомерного ан
       </Expandable>
     </ResponseField>
   </Expandable>
-  
   ```yaml
   selectable_measures:
     type: multiple
@@ -383,17 +353,15 @@ description: "Сводные таблицы для многомерного ан
 
 <ResponseField name="sorting" type="PivotTableSorting[]">
   Сортировка данных
-  
+
   <Expandable title="Структура PivotTableSorting">
     <ResponseField name="member" type="string" required>
       Имя меры или измерения для сортировки
     </ResponseField>
-    
     <ResponseField name="direction" type="enum" required>
       Направление: `asc` | `desc`
     </ResponseField>
   </Expandable>
-  
   ```yaml
   sorting:
     - member: sales.revenue
@@ -427,6 +395,7 @@ measures:
 include_rows_totals: true
 include_columns_totals: true
 ```
+
 
 ```yaml С иерархией и форматированием
 type: pivot_table_v2
@@ -480,6 +449,7 @@ sorting:
   - member: sales.revenue
     direction: desc
 ```
+
 
 ```yaml С выбираемыми полями
 type: pivot_table_v2
@@ -538,16 +508,16 @@ include_rows_totals: true
 ## См. также
 
 <CardGroup cols={2}>
-  <Card title="Иерархии измерений" icon="sitemap" href="../features/dimension-hierarchy">
+  <Card icon="sitemap" href="../features/dimension-hierarchy" title="Иерархии измерений">
     Drill-down и группировка
   </Card>
-  <Card title="Условное форматирование" icon="palette" href="../features/conditional-formatting">
+  <Card icon="palette" href="../features/conditional-formatting" title="Условное форматирование">
     Цвета и градиенты
   </Card>
-  <Card title="Выбираемые поля" icon="list-check" href="../features/selectable-fields">
+  <Card icon="list-check" href="../features/selectable-fields" title="Выбираемые поля">
     Динамический выбор полей
   </Card>
-  <Card title="Сортировка" icon="arrow-down-a-z" href="../features/sorting">
+  <Card icon="arrow-down-a-z" href="../features/sorting" title="Сортировка">
     Настройка порядка данных
   </Card>
 </CardGroup>

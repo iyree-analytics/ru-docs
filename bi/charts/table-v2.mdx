@@ -3,7 +3,11 @@ title: "Таблицы (Table)"
 description: "Табличные графики для отображения данных в виде строк и колонок"
 ---
 
-<img src="/assets/img/charts/table_v2/table_v2_example.png" width="300" alt="Пример Table V2 графика" />
+<img
+  src="/assets/img/charts/table_v2/table_v2_example.png"
+  width="300"
+  alt="Пример Table V2 графика"
+/>
 
 Таблица с поддержкой иерархий измерений, группировки строк, условного форматирования и действий.
 
@@ -15,25 +19,26 @@ description: "Табличные графики для отображения д
 
 <ResponseField name="columns" type="TableColumn[]" required>
   Определение колонок таблицы. Каждая колонка может быть одного из типов: `dimension`, `dimension_hierarchy`, `dimension_row_grouping`, `measure`.
-  
+
   <Expandable title="Типы колонок">
     ### dimension — Обычное измерение
-    
+
     <ResponseField name="type" type='"dimension"' required>
       Тип колонки
     </ResponseField>
-    
     <ResponseField name="member" type="CubeDimension" required>
       Измерение из куба данных
-      
+
       <Expandable title="Структура CubeDimension">
         **Обычное измерение (BasicDimension):**
+
         ```yaml
         kind: basic
         value: products.category
         ```
-        
+
         **Временное измерение (TimeDimension):**
+
         ```yaml
         kind: time
         value:
@@ -42,34 +47,28 @@ description: "Табличные графики для отображения д
         ```
       </Expandable>
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок колонки
     </ResponseField>
-    
     <ResponseField name="title_tooltip" type="string">
       Подсказка при наведении на заголовок
     </ResponseField>
-    
     <ResponseField name="column_width" type="number">
       Ширина колонки в пикселях
     </ResponseField>
-    
     <ResponseField name="value_overflow" type="enum">
       Обработка длинного текста: `ellipsis` | `break-word`
     </ResponseField>
-    
     <ResponseField name="conditional_formatting" type="DimensionConditionalFormatting">
       Форматирование по значениям измерения
-      
+
       <Expandable title="Структура DimensionConditionalFormatting">
         <ResponseField name="type" type="enum" required>
           Тип форматирования: `background` | `text`
         </ResponseField>
-        
         <ResponseField name="values" type="Dict[string, RGBColor]" required>
           Цвета для конкретных значений. RGBColor — массив `[R, G, B]` (0-255).
-          
+
           ```yaml
           values:
             "Электроника": [66, 133, 244]
@@ -79,38 +78,31 @@ description: "Табличные графики для отображения д
         </ResponseField>
       </Expandable>
     </ResponseField>
-    
     <ResponseField name="data_point_actions" type="DataPointActionDefinition[]">
-      Действия при клике на ячейку
-      
+      Действия при клике на ячейку. Можно использовать только в колонках с типом "measure".
+
       <Expandable title="Структура DataPointActionDefinition">
         <ResponseField name="id" type="string" required>
           Уникальный идентификатор (UUID)
         </ResponseField>
-        
         <ResponseField name="key" type="string" required>
           Ключ действия: `common:copy_value` | `common:view_raw_data` | `link:open` | `dashboard:drill_through` | `dashboard:another_dashboard_drill_through`
         </ResponseField>
-        
         <ResponseField name="title" type="string" required>
           Текст в меню
         </ResponseField>
-        
         <ResponseField name="icon" type="IconReference">
           Иконка: `{library: "lucide", name: "icon-name", color?: [R,G,B]}`
         </ResponseField>
-        
         <ResponseField name="target_page_id" type="string">
           UUID целевой страницы (для drill_through)
         </ResponseField>
-        
         <ResponseField name="target_dashboard_id" type="string">
           UUID целевого дашборда (для another_dashboard_drill_through)
         </ResponseField>
-        
         <ResponseField name="filter_mappings" type="DrillThroughFilterMapping[]">
           Маппинг фильтров
-          
+
           <Expandable title="Структура">
             ```yaml
             filter_mappings:
@@ -121,18 +113,15 @@ description: "Табличные графики для отображения д
             ```
           </Expandable>
         </ResponseField>
-        
         <ResponseField name="url" type="string">
           URL для link:open с подстановкой `{cube.member}`
         </ResponseField>
-        
         <ResponseField name="open_in" type="enum">
           `same_tab` | `new_tab`
         </ResponseField>
-        
         <ResponseField name="placement" type="DataPointActionPlacement">
           Позиционирование в меню
-          
+
           <Expandable title="Структура">
             ```yaml
             placement:
@@ -147,22 +136,19 @@ description: "Табличные графики для отображения д
         </ResponseField>
       </Expandable>
     </ResponseField>
-    
     ---
-    
+
     ### dimension_hierarchy — Иерархия с drill-down
-    
+
     <ResponseField name="type" type='"dimension_hierarchy"' required>
       Тип колонки
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Общий заголовок иерархии
     </ResponseField>
-    
     <ResponseField name="levels" type="HierarchyLevel[]" required>
       Уровни иерархии (от верхнего к нижнему)
-      
+
       <Expandable title="Структура HierarchyLevel">
         <ResponseField name="member" type="CubeDimension" required>
           Измерение уровня
@@ -171,7 +157,6 @@ description: "Табличные графики для отображения д
           Заголовок уровня
         </ResponseField>
       </Expandable>
-      
       ```yaml
       levels:
         - member:
@@ -184,79 +169,71 @@ description: "Табличные графики для отображения д
           title: Город
       ```
     </ResponseField>
-    
     ---
-    
+
     ### dimension_row_grouping — Группировка строк
-    
+
     Группирует строки по значениям с возможностью сворачивания.
-    
+
     <ResponseField name="type" type='"dimension_row_grouping"' required>
       Тип колонки
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок колонки
     </ResponseField>
-    
     <ResponseField name="levels" type="HierarchyLevel[]" required>
       Уровни группировки (структура аналогична dimension_hierarchy)
     </ResponseField>
-    
     <Info>
       **Разница между dimension_hierarchy и dimension_row_grouping:**
+
       - `dimension_hierarchy` — данные подгружаются при раскрытии (lazy loading)
       - `dimension_row_grouping` — все данные загружены сразу, группировка визуальная
     </Info>
-    
     ---
-    
+
     ### measure — Числовой показатель
-    
+
     <ResponseField name="type" type='"measure"' required>
       Тип колонки
     </ResponseField>
-    
     <ResponseField name="member" type="string" required>
       Имя меры из куба
-      
+
       ```yaml
       member: sales.total_revenue
       ```
     </ResponseField>
-    
     <ResponseField name="title" type="string">
       Заголовок колонки
     </ResponseField>
-    
     <ResponseField name="conditional_formatting" type="MeasureConditionalFormatting">
       Условное форматирование меры
-      
+
       <Expandable title="Структура MeasureConditionalFormatting">
         <ResponseField name="type" type="enum" required>
           Тип: `background` | `text` | `icon`
         </ResponseField>
-        
         <ResponseField name="filling_type" type="enum" required>
           Способ расчёта: `palette` | `gradient`
         </ResponseField>
-        
         <ResponseField name="source_field" type="string">
           Поле для расчёта (если отличается от текущего)
         </ResponseField>
-        
         <ResponseField name="conditions" type="Condition[]">
           Условия для palette
-          
+
           <Expandable title="Структура Condition">
             **Точное совпадение:**
+
             ```yaml
             type: eq
             value: 0
             color: [158, 158, 158]
             ```
-            
+
             **Интервал:**
+
             ```yaml
             type: interval
             interval:
@@ -268,8 +245,9 @@ description: "Табличные графики для отображения д
                 value: 200
               color: [200, 230, 201]
             ```
-            
+
             **С иконкой (для type: icon):**
+
             ```yaml
             type: interval
             interval:
@@ -283,12 +261,12 @@ description: "Табличные графики для отображения д
             ```
           </Expandable>
         </ResponseField>
-        
         <ResponseField name="gradient" type="Gradient">
           Настройки градиента
-          
+
           <Expandable title="Структура Gradient">
             **Двухцветный:**
+
             ```yaml
             type: two_colors
             palette: white_green  # white_red|white_green|white_blue|white_yellow|white_purple
@@ -296,8 +274,9 @@ description: "Табличные графики для отображения д
               min_value: 0
               max_value: 100
             ```
-            
+
             **Трёхцветный:**
+
             ```yaml
             type: three_colors
             palette: red_white_green  # red_yellow_green|red_white_green|green_yellow_red|green_white_red
@@ -308,37 +287,31 @@ description: "Табличные графики для отображения д
             ```
           </Expandable>
         </ResponseField>
-        
         <ResponseField name="position" type="enum">
           Позиция иконки (для type: icon): `left` | `right` | `icon_only`
         </ResponseField>
       </Expandable>
     </ResponseField>
-    
     <ResponseField name="linear_indicator" type="TableMeasureLinearIndicator">
       Линейный индикатор (прогресс-бар)
-      
+
       <Expandable title="Структура TableMeasureLinearIndicator">
         <ResponseField name="main_color" type="RGBColor" required>
           Основной цвет `[R, G, B]`
         </ResponseField>
-        
         <ResponseField name="negative_color" type="RGBColor">
           Цвет для отрицательных значений
         </ResponseField>
       </Expandable>
-      
       ```yaml
       linear_indicator:
         main_color: [66, 133, 244]
         negative_color: [234, 67, 53]
       ```
     </ResponseField>
-    
     <ResponseField name="compare_formatting_direction" type="enum">
       Направление сравнения периодов: `more_better` | `less_better` | `none`
     </ResponseField>
-    
     <ResponseField name="data_point_actions" type="DataPointActionDefinition[]">
       Действия при клике (структура описана выше)
     </ResponseField>
@@ -377,6 +350,7 @@ columns:
     title: Выручка
 include_totals: true
 ```
+
 
 ```yaml С иерархией и группировкой
 type: table_v2
@@ -425,6 +399,7 @@ show_row_numbers: true
 include_totals: true
 ```
 
+
 ```yaml С drill-through
 type: table_v2
 columns:
@@ -433,7 +408,10 @@ columns:
       kind: basic
       value: orders.order_number
     title: Номер заказа
-    data_point_actions:
+  - type: measure
+    member: orders.total
+    title: Сумма
+	data_point_actions:
       - id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
         key: "dashboard:drill_through"
         title: "Детали заказа"
@@ -443,10 +421,8 @@ columns:
             sources:
               - type: data_point_dimension
                 member_name: orders.order_id
-  - type: measure
-    member: orders.total
-    title: Сумма
 ```
+
 
 ```yaml С форматированием измерений
 type: table_v2
@@ -475,16 +451,16 @@ columns:
 ## См. также
 
 <CardGroup cols={2}>
-  <Card title="Иерархии измерений" icon="sitemap" href="../features/dimension-hierarchy">
+  <Card icon="sitemap" href="../features/dimension-hierarchy" title="Иерархии измерений">
     Drill-down и группировка строк
   </Card>
-  <Card title="Условное форматирование" icon="palette" href="../features/conditional-formatting">
+  <Card icon="palette" href="../features/conditional-formatting" title="Условное форматирование">
     Цвета, градиенты, иконки
   </Card>
-  <Card title="Действия с данными" icon="mouse-pointer-click" href="../features/data-point-actions">
+  <Card icon="mouse-pointer-click" href="../features/data-point-actions" title="Действия с данными">
     Drill-through и ссылки
   </Card>
-  <Card title="Измерения" icon="layer-group" href="../features/dimensions">
+  <Card icon="layer-group" href="../features/dimensions" title="Измерения">
     Типы измерений
   </Card>
 </CardGroup>
