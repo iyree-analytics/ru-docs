@@ -330,6 +330,24 @@ description: "Табличные графики для отображения д
   Показать номера строк
 </ResponseField>
 
+<ResponseField name="sorting" type="TableSorting[]">
+  Сортировка данных
+
+  <Expandable title="Структура TableSorting">
+    <ResponseField name="member" type="string" required>
+      Имя меры или измерения для сортировки
+    </ResponseField>
+    <ResponseField name="direction" type="enum" required>
+      Направление: `asc` | `desc`
+    </ResponseField>
+  </Expandable>
+  ```yaml
+  sorting:
+    - member: sales.revenue
+      direction: desc
+  ```
+</ResponseField>
+
 ### Примеры
 
 <CodeGroup>
@@ -397,6 +415,9 @@ columns:
             color: [255, 205, 210]
 show_row_numbers: true
 include_totals: true
+sorting:
+  - member: sales.revenue
+    direction: desc
 ```
 
 
