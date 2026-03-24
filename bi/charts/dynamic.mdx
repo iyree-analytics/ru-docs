@@ -3,7 +3,11 @@ title: "Динамические графики (Dynamic Chart)"
 description: "Кастомные визуализации на базе ECharts"
 ---
 
-<img src="/assets/img/charts/dynamic/dynamic_example.png" width="600" alt="Пример Dynamic графика" />
+<img
+  src="/assets/img/charts/dynamic/dynamic_example.png"
+  width="600"
+  alt="Пример Dynamic графика"
+/>
 
 Динамические графики позволяют создавать кастомные визуализации с использованием библиотеки [Apache ECharts](https://echarts.apache.org/).
 
@@ -23,84 +27,111 @@ Dynamic Chart предоставляет полный контроль над в
   Тип графика
 </ResponseField>
 
-<ResponseField name="dimensions" type="CubeDimension[]" required>
-  Измерения для запроса данных
+<ResponseField name="queries" type="Record<string, CubeQuery>" required>
+  Именованные Cube.js запросы. Каждый ключ — произвольное имя запроса, значение — стандартный объект [CubeQuery](https://cube.dev/docs/product/apis-integrations/rest-api/query-format).
   
-  <Expandable title="Структура CubeDimension">
-    **Обычное измерение:**
+  <Expandable title="Структура CubeQuery">
+    Стандартный объект запроса Cube.js:
     ```yaml
-    kind: basic
-    value: products.category
-    ```
-    
-    **Временное измерение:**
-    ```yaml
-    kind: time
-    value:
-      dimension: sales.created_at
-      granularity: month
+    measures:
+      - cube_name.measure_name
+    dimensions:
+      - cube_name.dimension_name
+    filters: []          # опционально
+    timeDimensions: []   # опционально
+    segments: []         # опционально
+    limit: null          # опционально
+    order: {}            # опционально
     ```
   </Expandable>
   
   ```yaml
-  dimensions:
-    - kind: basic
-      value: products.category
-    - kind: time
-      value:
-        dimension: sales.created_at
-        granularity: month
+  queries:
+    main:
+      measures:
+        - sales.revenue
+        - sales.quantity
+      dimensions:
+        - products.category
+    trends:
+      measures:
+        - sales.revenue
+      timeDimensions:
+        - dimension: sales.created_at
+          granularity: month
   ```
 </ResponseField>
 
-<ResponseField name="measures" type="string[]" required>
-  Меры для запроса данных
+<ResponseField name="transform_code" type="string" required>
+  JavaScript-код функции, которая преобразует результаты Cube.js запросов в объект конфигурации ECharts.
   
-  ```yaml
-  measures:
-    - sales.revenue
-    - sales.quantity
-  ```
-</ResponseField>
-
-<ResponseField name="echarts_options_code" type="string" required>
-  JavaScript-код, возвращающий объект конфигурации ECharts.
+  Код должен быть строкой вида `function(queries) { ... }`, где `queries` — объект типа `Record<string, FormattedResultSet>`. Ключи соответствуют именам запросов из поля `queries`.
   
-  <Expandable title="Контекст выполнения">
-    Код выполняется в изолированной среде со следующими переменными:
+  <Expandable title="Структура FormattedResultSet">
+    Каждый именованный результат (`queries.имя_запроса`) — это объект `FormattedResultSet` со следующими полями:
     
-    <ResponseField name="data" type="object[]">
-      Массив объектов с данными из куба. Каждый объект содержит значения измерений и мер.
+    <ResponseField name="data" type="Record<string, FormattedResultValue>[]">
+      Массив строк результата. Каждая строка — объект, где ключи — полные имена членов куба (`cube.member`), а значения — объекты `FormattedResultValue`:
+      
+      - `value` — сырое значение (`number | string | boolean | null`)
+      - `formattedValue` — отформатированная строка (с учётом настроек форматирования: разделители, символы валюты, десятичные знаки, формат даты)
       
       ```javascript
-      // Пример структуры data:
+      // Пример queries.locations.data:
       [
-        { "products.category": "Электроника", "sales.revenue": 150000 },
-        { "products.category": "Одежда", "sales.revenue": 80000 },
-        { "products.category": "Продукты", "sales.revenue": 120000 }
+        {
+          "sales.department": {
+            value: "Москва-Центр",
+            formattedValue: "Москва-Центр"
+          },
+          "sales.revenue": {
+            value: 150000,
+            formattedValue: "150 000 ₽"
+          }
+        }
       ]
       ```
     </ResponseField>
     
-    <ResponseField name="echarts" type="object">
-      Библиотека ECharts для использования утилит.
-    </ResponseField>
-    
-    <ResponseField name="theme" type="object">
-      Тема оформления дашборда.
+    <ResponseField name="annotation" type="CubeQueryAnnotations">
+      Метаданные о запрошенных членах куба (title, shortTitle, type, format). Полезно для динамического построения подписей осей, легенды, и tooltip без хардкода имён.
       
       ```javascript
-      // Доступные свойства:
-      theme.colors.primary
-      theme.colors.secondary
-      theme.colors.background
-      theme.colors.text
+      // Пример queries.locations.annotation:
+      {
+        dimensions: {
+          "sales.department": {
+            title: "Sales Department",
+            shortTitle: "Department",
+            type: "string"
+          }
+        },
+        measures: {
+          "sales.revenue": {
+            title: "Sales Revenue",
+            shortTitle: "Revenue",
+            type: "number",
+            format: "currency"
+          }
+        },
+        timeDimensions: {}
+      }
       ```
+    </ResponseField>
+    
+    <ResponseField name="query" type="CubeQuery">
+      Исходный объект запроса Cube.js, который был выполнен для этого результата.
     </ResponseField>
   </Expandable>
   
+  <Expandable title="Контекст выполнения">
+    - Код выполняется в **изолированном Web Worker** с ограничением по времени. При превышении таймаута выполнение будет прервано.
+    - Функции в возвращаемом объекте ECharts (например, `tooltip.formatter`, `label.formatter`) **поддерживаются** — они сериализуются в worker и восстанавливаются на основном потоке.
+    - Доступ к DOM, `window`, `document` и другим API браузера **недоступен** внутри worker.
+  </Expandable>
+  
   <Warning>
-    Код должен возвращать валидный объект конфигурации ECharts. Используйте `return` в конце.
+    Функция должна возвращать валидный объект конфигурации ECharts. Используйте `return` в конце.
   </Warning>
 </ResponseField>
 
@@ -112,56 +143,213 @@ Dynamic Chart предоставляет полный контроль над в
 
 ## Примеры
 
-### Линейный график
+### Горизонтальная столбчатая диаграмма с порогом
+
+Пример: процент скидки по локациям с выделением значений выше порога.
 
 <CodeGroup>
 
 ```yaml Конфигурация
 type: dynamic_chart
-dimensions:
-  - kind: time
-    value:
-      dimension: sales.created_at
-      granularity: month
-measures:
-  - sales.revenue
-  - sales.quantity
-echarts_options_code: |
-  const months = data.map(d => d['sales.created_at']);
-  const revenue = data.map(d => d['sales.revenue']);
-  const quantity = data.map(d => d['sales.quantity']);
-  
-  return {
-    tooltip: {
-      trigger: 'axis'
-    },
-    legend: {
-      data: ['Выручка', 'Количество']
-    },
-    xAxis: {
-      type: 'category',
-      data: months
-    },
-    yAxis: [
-      { type: 'value', name: 'Выручка' },
-      { type: 'value', name: 'Количество' }
-    ],
-    series: [
-      {
-        name: 'Выручка',
-        type: 'line',
-        data: revenue,
-        smooth: true
+compare_period_enabled: false
+queries:
+  locations:
+    measures:
+      - sales.revenue
+      - sales.discount_sum
+    dimensions:
+      - sales.department
+transform_code: |
+  function(queries) {
+    const data = queries.locations.data;
+    
+    if (data.length === 0) {
+      return { title: { text: 'No data available' } };
+    }
+    
+    const chartData = data.map(row => {
+      const revenue = row['sales.revenue'].value || 0;
+      const discount = row['sales.discount_sum'].value || 0;
+      const discountPercent = revenue > 0 ? (discount / revenue * 100) : 0;
+      
+      return {
+        name: row['sales.department'].formattedValue || 'Unknown',
+        value: discountPercent,
+        discountFormatted: discountPercent.toFixed(2) + '%',
+        revenueFormatted: row['sales.revenue'].formattedValue,
+        itemStyle: {
+          color: discountPercent > 50 ? '#e74c3c' : '#27ae60'
+        }
+      };
+    }).sort((a, b) => b.value - a.value);
+    
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: function(params) {
+          const d = params[0].data;
+          return d.name + '<br/>' +
+            'Процент скидки: <b>' + d.discountFormatted + '</b><br/>' +
+            'Выручка: ' + d.revenueFormatted;
+        }
       },
-      {
-        name: 'Количество',
-        type: 'line',
-        yAxisIndex: 1,
-        data: quantity,
-        smooth: true
+      grid: {
+        left: '15%',
+        right: '5%',
+        bottom: '15%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Процент скидки (%)',
+        axisLabel: { formatter: '{value}%' }
+      },
+      yAxis: {
+        type: 'category',
+        data: chartData.map(d => d.name)
+      },
+      series: [{
+        type: 'bar',
+        data: chartData,
+        label: {
+          show: true,
+          position: 'right',
+          formatter: function(params) {
+            return params.data.discountFormatted;
+          }
+        },
+        markLine: {
+          data: [
+            { xAxis: 50, lineStyle: { color: '#f39c12', type: 'dashed', width: 2 }, label: { formatter: '50% порог' } }
+          ]
+        }
+      }]
+    };
+  }
+```
+
+</CodeGroup>
+
+### KPI-плитка (только текст)
+
+Используйте ECharts `title` для отображения числового KPI без графических элементов.
+
+<CodeGroup>
+
+```yaml Конфигурация
+type: dynamic_chart
+compare_period_enabled: false
+queries:
+  locations:
+    measures:
+      - sales.revenue
+      - sales.discount_sum
+    dimensions:
+      - sales.department
+transform_code: |
+  function(queries) {
+    const data = queries.locations.data;
+    
+    if (data.length === 0) {
+      return { title: { text: 'No data available', left: 'center', top: 'center' } };
+    }
+    
+    const locationsWithDiscount = data.map(row => {
+      const revenue = row['sales.revenue'].value || 0;
+      const discount = row['sales.discount_sum'].value || 0;
+      const discountPercent = revenue > 0 ? (discount / revenue * 100) : 0;
+      return { discountPercent };
+    });
+    
+    const highDiscountCount = locationsWithDiscount.filter(l => l.discountPercent > 50).length;
+    const totalCount = locationsWithDiscount.length;
+    
+    return {
+      title: {
+        text: highDiscountCount + ' из ' + totalCount,
+        subtext: 'Локаций со скидкой >50%',
+        left: 'center',
+        top: 'center',
+        textStyle: {
+          fontSize: 48,
+          fontWeight: 'bold',
+          color: highDiscountCount > 0 ? '#e74c3c' : '#27ae60'
+        },
+        subtextStyle: {
+          fontSize: 18,
+          color: '#666'
+        }
       }
-    ]
-  };
+    };
+  }
+```
+
+</CodeGroup>
+
+### Линейный график с несколькими запросами
+
+Пример использования нескольких именованных запросов.
+
+<CodeGroup>
+
+```yaml Конфигурация
+type: dynamic_chart
+compare_period_enabled: false
+queries:
+  revenue:
+    measures:
+      - sales.revenue
+    timeDimensions:
+      - dimension: sales.created_at
+        granularity: month
+  orders:
+    measures:
+      - orders.count
+    timeDimensions:
+      - dimension: orders.created_at
+        granularity: month
+transform_code: |
+  function(queries) {
+    const revenueData = queries.revenue.data;
+    const ordersData = queries.orders.data;
+    
+    if (revenueData.length === 0) {
+      return { title: { text: 'No data available' } };
+    }
+    
+    const months = revenueData.map(d => d['sales.created_at'].formattedValue);
+    const revenue = revenueData.map(d => d['sales.revenue'].value);
+    const orders = ordersData.map(d => d['orders.count'].value);
+    
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['Выручка', 'Заказы'] },
+      xAxis: {
+        type: 'category',
+        data: months
+      },
+      yAxis: [
+        { type: 'value', name: 'Выручка' },
+        { type: 'value', name: 'Заказы' }
+      ],
+      series: [
+        {
+          name: 'Выручка',
+          type: 'line',
+          data: revenue,
+          smooth: true
+        },
+        {
+          name: 'Заказы',
+          type: 'line',
+          yAxisIndex: 1,
+          data: orders,
+          smooth: true
+        }
+      ]
+    };
+  }
 ```
 
 </CodeGroup>
@@ -172,218 +360,131 @@ echarts_options_code: |
 
 ```yaml Конфигурация
 type: dynamic_chart
-dimensions:
-  - kind: basic
-    value: products.category
-measures:
-  - sales.revenue
-  - sales.quantity
-  - sales.margin
-echarts_options_code: |
-  const categories = data.map(d => d['products.category']);
-  const maxRevenue = Math.max(...data.map(d => d['sales.revenue']));
-  const maxQuantity = Math.max(...data.map(d => d['sales.quantity']));
-  const maxMargin = Math.max(...data.map(d => d['sales.margin']));
-  
-  return {
-    tooltip: {},
-    radar: {
-      indicator: [
-        { name: 'Выручка', max: maxRevenue },
-        { name: 'Количество', max: maxQuantity },
-        { name: 'Маржа', max: maxMargin }
-      ]
-    },
-    series: [{
-      type: 'radar',
-      data: categories.map((cat, i) => ({
-        name: cat,
-        value: [
-          data[i]['sales.revenue'],
-          data[i]['sales.quantity'],
-          data[i]['sales.margin']
+compare_period_enabled: false
+queries:
+  metrics:
+    measures:
+      - sales.revenue
+      - sales.quantity
+      - sales.margin
+    dimensions:
+      - products.category
+transform_code: |
+  function(queries) {
+    const data = queries.metrics.data;
+    
+    if (data.length === 0) {
+      return { title: { text: 'No data available' } };
+    }
+    
+    const categories = data.map(d => d['products.category'].formattedValue);
+    const maxRevenue = Math.max(...data.map(d => d['sales.revenue'].value));
+    const maxQuantity = Math.max(...data.map(d => d['sales.quantity'].value));
+    const maxMargin = Math.max(...data.map(d => d['sales.margin'].value));
+    
+    return {
+      tooltip: {},
+      radar: {
+        indicator: [
+          { name: 'Выручка', max: maxRevenue },
+          { name: 'Количество', max: maxQuantity },
+          { name: 'Маржа', max: maxMargin }
         ]
-      }))
-    }]
-  };
-```
-
-</CodeGroup>
-
-### Тепловая карта (Heatmap)
-
-<CodeGroup>
-
-```yaml Конфигурация
-type: dynamic_chart
-dimensions:
-  - kind: basic
-    value: products.category
-  - kind: time
-    value:
-      dimension: sales.created_at
-      granularity: month
-measures:
-  - sales.revenue
-echarts_options_code: |
-  const categories = [...new Set(data.map(d => d['products.category']))];
-  const months = [...new Set(data.map(d => d['sales.created_at']))];
-  
-  const heatmapData = data.map(d => [
-    months.indexOf(d['sales.created_at']),
-    categories.indexOf(d['products.category']),
-    d['sales.revenue']
-  ]);
-  
-  const maxValue = Math.max(...data.map(d => d['sales.revenue']));
-  
-  return {
-    tooltip: {
-      position: 'top',
-      formatter: (params) => {
-        return `${categories[params.value[1]]}<br/>
-                ${months[params.value[0]]}<br/>
-                Выручка: ${params.value[2].toLocaleString()}`;
-      }
-    },
-    xAxis: {
-      type: 'category',
-      data: months,
-      splitArea: { show: true }
-    },
-    yAxis: {
-      type: 'category',
-      data: categories,
-      splitArea: { show: true }
-    },
-    visualMap: {
-      min: 0,
-      max: maxValue,
-      calculable: true,
-      orient: 'horizontal',
-      left: 'center',
-      bottom: 0,
-      inRange: {
-        color: ['#f7fbff', '#08306b']
-      }
-    },
-    series: [{
-      type: 'heatmap',
-      data: heatmapData,
-      label: { show: false }
-    }]
-  };
-```
-
-</CodeGroup>
-
-### Gauge (спидометр)
-
-<CodeGroup>
-
-```yaml Конфигурация
-type: dynamic_chart
-dimensions: []
-measures:
-  - sales.plan_completion
-echarts_options_code: |
-  const value = data[0]?.['sales.plan_completion'] || 0;
-  
-  return {
-    series: [{
-      type: 'gauge',
-      startAngle: 180,
-      endAngle: 0,
-      min: 0,
-      max: 150,
-      splitNumber: 6,
-      axisLine: {
-        lineStyle: {
-          width: 20,
-          color: [
-            [0.66, '#fd666d'],
-            [1, '#67e0e3'],
-            [1.5, '#37a2da']
+      },
+      series: [{
+        type: 'radar',
+        data: categories.map((cat, i) => ({
+          name: cat,
+          value: [
+            data[i]['sales.revenue'].value,
+            data[i]['sales.quantity'].value,
+            data[i]['sales.margin'].value
           ]
-        }
-      },
-      pointer: {
-        itemStyle: {
-          color: 'auto'
-        }
-      },
-      axisTick: {
-        distance: -20,
-        length: 8,
-        lineStyle: { color: '#fff', width: 2 }
-      },
-      splitLine: {
-        distance: -20,
-        length: 20,
-        lineStyle: { color: '#fff', width: 4 }
-      },
-      axisLabel: {
-        color: 'inherit',
-        distance: 30,
-        fontSize: 14
-      },
-      detail: {
-        valueAnimation: true,
-        formatter: '{value}%',
-        color: 'inherit',
-        fontSize: 24
-      },
-      data: [{ value: Math.round(value) }]
-    }]
-  };
+        }))
+      }]
+    };
+  }
 ```
 
 </CodeGroup>
 
-### Sankey-диаграмма
+### Редактирование в JSON-режиме
+
+При редактировании конфигурации в JSON-режиме значение `transform_code` должно быть **однострочной строкой** — переносы строк записываются как `\n`, табуляция как `\t`. Это требование формата JSON (многострочные строки не поддерживаются).
+
+<Tip>
+  В YAML-режиме (`transform_code: |`) код можно писать в обычном многострочном виде. В JSON-режиме — только в одну строку с escape-символами.
+</Tip>
+
+<CodeGroup>
+
+```json JSON
+{
+  "type": "dynamic_chart",
+  "compare_period_enabled": false,
+  "queries": {
+    "locations": {
+      "measures": [
+        "dm_order.dish_discount_sum_int",
+        "dm_order.dish_sum_int"
+      ],
+      "dimensions": [
+        "dm_order.department_name"
+      ]
+    }
+  },
+  "transform_code": "function(queries) {\n  const data = queries.locations.data;\n  \n  if (data.length === 0) {\n    return { title: { text: 'No data available', left: 'center', top: 'center' } };\n  }\n  \n  // Calculate discount percentage for each location\n  const locationsWithDiscount = data.map(row => {\n    const revenue = row['dm_order.dish_sum_int'].value || 0;\n    const afterDiscount = row['dm_order.dish_discount_sum_int'].value || 0;\n    const discount = revenue - afterDiscount;\n    const discountPercent = revenue > 0 ? (discount / revenue * 100) : 0;\n    return { discountPercent };\n  });\n  \n  // Count locations with >50% discount\n  const highDiscountCount = locationsWithDiscount.filter(l => l.discountPercent > 50).length;\n  const totalCount = locationsWithDiscount.length;\n  \n  return {\n    title: {\n      text: highDiscountCount + ' из ' + totalCount,\n      subtext: 'Локаций со скидкой >50%',\n      left: 'center',\n      top: 'center',\n      textStyle: {\n        fontSize: 48,\n        fontWeight: 'bold',\n        color: highDiscountCount > 0 ? '#e74c3c' : '#27ae60'\n      },\n      subtextStyle: {\n        fontSize: 18,\n        color: '#666'\n      }\n    }\n  };\n}"
+}
+```
+
+</CodeGroup>
+
+### Использование annotation для динамических подписей
+
+Вместо хардкода подписей осей можно читать `shortTitle` из метаданных куба.
 
 <CodeGroup>
 
 ```yaml Конфигурация
 type: dynamic_chart
-dimensions:
-  - kind: basic
-    value: traffic.source
-  - kind: basic
-    value: traffic.medium
-  - kind: basic
-    value: traffic.campaign
-measures:
-  - traffic.sessions
-echarts_options_code: |
-  // Создаём узлы и связи для Sankey
-  const nodes = new Set();
-  const links = [];
-  
-  data.forEach(d => {
-    const source = d['traffic.source'];
-    const medium = d['traffic.medium'];
-    const campaign = d['traffic.campaign'];
-    const value = d['traffic.sessions'];
+compare_period_enabled: false
+queries:
+  main:
+    measures:
+      - sales.revenue
+    dimensions:
+      - products.category
+transform_code: |
+  function(queries) {
+    const result = queries.main;
+    const data = result.data;
+    const annotation = result.annotation;
     
-    nodes.add(source);
-    nodes.add(medium);
-    nodes.add(campaign);
+    if (data.length === 0) {
+      return { title: { text: 'No data available' } };
+    }
     
-    links.push({ source, target: medium, value: value / 2 });
-    links.push({ source: medium, target: campaign, value: value / 2 });
-  });
-  
-  return {
-    tooltip: { trigger: 'item' },
-    series: [{
-      type: 'sankey',
-      data: [...nodes].map(name => ({ name })),
-      links: links,
-      emphasis: { focus: 'adjacency' },
-      lineStyle: { color: 'gradient', curveness: 0.5 }
-    }]
-  };
+    // Названия осей из метаданных куба
+    const measureTitle = annotation.measures['sales.revenue'].shortTitle;
+    const dimensionTitle = annotation.dimensions['products.category'].shortTitle;
+    
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      xAxis: {
+        type: 'category',
+        name: dimensionTitle,
+        data: data.map(d => d['products.category'].formattedValue)
+      },
+      yAxis: {
+        type: 'value',
+        name: measureTitle
+      },
+      series: [{
+        type: 'bar',
+        data: data.map(d => d['sales.revenue'].value)
+      }]
+    };
+  }
 ```
 
 </CodeGroup>
@@ -397,22 +498,131 @@ echarts_options_code: |
     Ознакомьтесь с [примерами ECharts](https://echarts.apache.org/examples/) для понимания возможностей.
   </Step>
   
-  <Step title="Начните с простого">
-    Создайте базовый график, затем добавляйте сложность постепенно.
+  <Step title="Структура данных">
+    Значения в `data` — это объекты `FormattedResultValue` с полями `value` (сырое значение) и `formattedValue` (отформатированная строка). Используйте `.value` для вычислений и `.formattedValue` для отображения в подписях и tooltip.
+  </Step>
+  
+  <Step title="Используйте annotation для динамических подписей">
+    Вместо хардкода названий осей и легенды, используйте `queries.имя.annotation.measures['cube.measure'].shortTitle` для получения заголовков из метаданных куба.
+  </Step>
+  
+  <Step title="Несколько запросов">
+    Используйте несколько именованных запросов в `queries`, когда данные приходят из разных кубов или требуют разных группировок. Все результаты будут доступны в `transform_code` через `queries.имя_запроса`.
   </Step>
   
   <Step title="Обрабатывайте пустые данные">
-    Всегда проверяйте наличие данных: `data[0]?.['measure'] || 0`
+    Всегда проверяйте наличие данных: `data.length === 0` и значений: `row['measure'].value || 0`
   </Step>
   
-  <Step title="Используйте тему">
-    Применяйте `theme.colors` для согласованности с остальным дашбордом.
+  <Step title="Функции в ECharts">
+    Функции в возвращаемом объекте (например, `tooltip.formatter`, `label.formatter`) поддерживаются — они автоматически сериализуются и восстанавливаются. Используйте обычный синтаксис `function(params) { ... }`.
+  </Step>
+  
+  <Step title="Начните с простого">
+    Создайте базовый график с одним запросом, затем добавляйте сложность постепенно.
   </Step>
 </Steps>
 
 <Warning>
-  JavaScript-код выполняется на клиенте. Избегайте тяжёлых вычислений и бесконечных циклов.
+  JavaScript-код выполняется в изолированном Web Worker на клиенте. Доступ к DOM, `window` и `document` недоступен. Избегайте тяжёлых вычислений и бесконечных циклов — при превышении таймаута выполнение будет прервано. Функция `transform_code` должна быть строкой вида `function(queries) { ... return echartsOptions; }`.
 </Warning>
+
+---
+
+## Генерация с помощью LLM
+
+Вы можете использовать LLM (ChatGPT, Claude и т.д.) для генерации конфигурации `dynamic_chart`. Скопируйте промпт ниже, заполните верхнюю часть (запросы и описание графика) и отправьте в LLM. Полученный JSON можно вставить в редактор графика.
+
+<Expandable title="Промпт для генерации конфигурации dynamic_chart">
+
+```text
+=== МОИ ДАННЫЕ И ОПИСАНИЕ ГРАФИКА ===
+
+Запросы:
+
+query1 (имя: "main"):
+Меры: cube_name.measure1, cube_name.measure2
+Измерения: cube_name.dimension1
+Измерения времени: cube_name.date_field, гранулярность – month
+
+query2 (имя: "second"):
+Меры: cube_name.measure3
+Измерения: cube_name.dimension2
+
+Описание графика: [Опишите здесь, что именно вы хотите видеть на графике. Например: "Горизонтальная столбчатая диаграмма процента скидки по филиалам. Столбцы зелёные, если скидка ≤50%, красные если >50%. Пороговая линия на 50%."]
+
+Формат конфигурации: json
+
+=== ИНСТРУКЦИЯ ДЛЯ LLM (НЕ РЕДАКТИРОВАТЬ) ===
+
+Сгенерируй конфигурацию графика типа `dynamic_chart` для BI-платформы. Ответ — только валидный JSON, без пояснений.
+
+ФОРМАТ КОНФИГУРАЦИИ:
+
+{
+  "type": "dynamic_chart",
+  "compare_period_enabled": false,
+  "queries": {
+    "<имя_запроса>": {
+      "measures": ["cube.measure1", "cube.measure2"],
+      "dimensions": ["cube.dimension1"],
+      "timeDimensions": [{"dimension": "cube.date_field", "granularity": "month"}],
+      "filters": [],
+      "limit": null,
+      "order": {}
+    }
+  },
+  "transform_code": "<однострочная строка с function(queries) {...}>"
+}
+
+ПРАВИЛА:
+
+1. `queries` — объект с именованными Cube.js запросами. Ключи — произвольные имена. Значения — стандартные объекты CubeQuery с полями measures, dimensions, timeDimensions (опционально), filters (опционально), limit (опционально), order (опционально).
+
+2. `transform_code` — строка с JavaScript-функцией вида `function(queries) { ... return echartsOptions; }`. Так как это JSON, функция должна быть записана в ОДНУ СТРОКУ: переносы строк как \n, табуляция как \t, кавычки внутри строки экранировать.
+
+3. Аргумент `queries` в transform_code — это объект, ключи которого совпадают с ключами в поле `queries` конфигурации. Каждый `queries.<имя>` содержит:
+   - `data` — массив строк результата. Каждая строка — объект, где ключи — полные имена членов куба (например "cube.measure_name"), а значения — объекты с двумя полями:
+     - `value` — сырое значение (число, строка, boolean, null)
+     - `formattedValue` — отформатированная строка (с разделителями, символами валюты и т.д.)
+   - `annotation` — метаданные запроса (dimensions, measures, timeDimensions). Каждый член содержит title, shortTitle, type, format. Полезно для динамических подписей.
+   - `query` — исходный объект CubeQuery
+
+4. Пример доступа к данным в transform_code:
+   const data = queries.main.data;
+   const revenue = data[0]['cube.revenue'].value;         // число
+   const label = data[0]['cube.revenue'].formattedValue;   // "150 000 ₽"
+   const dimValue = data[0]['cube.category'].formattedValue; // "Электроника"
+   const axisTitle = queries.main.annotation.measures['cube.revenue'].shortTitle; // "Revenue"
+
+5. Функция должна возвращать валидный объект конфигурации Apache ECharts (https://echarts.apache.org/en/option.html).
+
+6. Функции внутри возвращаемого объекта ECharts ПОДДЕРЖИВАЮТСЯ (например tooltip.formatter, label.formatter). Используй обычный синтаксис: `function(params) { ... }`.
+
+7. Всегда обрабатывай пустые данные: `if (data.length === 0) { return { title: { text: 'Нет данных' } }; }`
+
+8. Код выполняется в изолированном Web Worker. DOM, window, document недоступны. Избегай тяжёлых вычислений и бесконечных циклов.
+
+9. Используй имена мер и измерений ТОЧНО как указано в разделе "Мои данные" выше.
+
+ПРИМЕР РЕЗУЛЬТАТА (KPI-плитка):
+
+{
+  "type": "dynamic_chart",
+  "compare_period_enabled": false,
+  "queries": {
+    "locations": {
+      "measures": ["dm_order.dish_discount_sum_int", "dm_order.dish_sum_int"],
+      "dimensions": ["dm_order.department_name"]
+    }
+  },
+  "transform_code": "function(queries) {\n  const data = queries.locations.data;\n  if (data.length === 0) {\n    return { title: { text: 'No data available', left: 'center', top: 'center' } };\n  }\n  const items = data.map(row => {\n    const revenue = row['dm_order.dish_sum_int'].value || 0;\n    const afterDiscount = row['dm_order.dish_discount_sum_int'].value || 0;\n    const discount = revenue - afterDiscount;\n    return { pct: revenue > 0 ? (discount / revenue * 100) : 0 };\n  });\n  const high = items.filter(l => l.pct > 50).length;\n  const total = items.length;\n  return {\n    title: {\n      text: high + ' из ' + total,\n      subtext: 'Локаций со скидкой >50%',\n      left: 'center',\n      top: 'center',\n      textStyle: { fontSize: 48, fontWeight: 'bold', color: high > 0 ? '#e74c3c' : '#27ae60' },\n      subtextStyle: { fontSize: 18, color: '#666' }\n    }\n  };\n}"
+}
+
+Теперь сгенерируй конфигурацию по моему описанию выше.
+```
+
+</Expandable>
 
 ---
 
@@ -424,6 +634,9 @@ echarts_options_code: |
   </Card>
   <Card title="ECharts Options" icon="gear" href="https://echarts.apache.org/en/option.html">
     Справочник по опциям
+  </Card>
+  <Card title="Cube.js Query Format" icon="database" href="https://cube.dev/docs/product/apis-integrations/rest-api/query-format">
+    Формат запросов Cube.js
   </Card>
 </CardGroup>
 
