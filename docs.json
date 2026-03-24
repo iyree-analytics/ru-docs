@@ -78,7 +78,7 @@
               "bi/charts/pivot-table-v2",
               "bi/charts/bar-v2",
               "bi/charts/pie",
-              "bi/charts/dynamic",
+              "bi/charts/dynamic-chart",
               {
                 "group": "Расширенные возможности графиков",
                 "pages": [
