@@ -105,6 +105,16 @@
             "pages": [
               "bi/cubes/measure-filters"
             ]
+          },
+          {
+            "group": "Python SDK",
+            "pages": [
+              "nachalo-raboty",
+              "dwh",
+              "cube",
+              "s3",
+              "key-value-store"
+            ]
           }
         ]
       }
