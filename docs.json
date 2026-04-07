@@ -117,6 +117,18 @@
             ]
           }
         ]
+      },
+      {
+        "group": "Интеграции",
+        "icon": "plug",
+        "pages": [
+          {
+            "group": "iiko",
+            "pages": [
+              "stop-list-iiko"
+            ]
+          }
+        ]
       }
     ]
   }
