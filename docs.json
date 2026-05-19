@@ -113,7 +113,8 @@
               "dwh",
               "cube",
               "s3",
-              "key-value-store"
+              "key-value-store",
+              "ai-reports"
             ]
           }
         ]
